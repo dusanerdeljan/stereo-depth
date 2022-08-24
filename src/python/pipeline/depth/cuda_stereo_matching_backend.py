@@ -120,36 +120,37 @@ def ncc_matching_cost_volume_kernel(
     if x >= input_left.shape[0] or y >= input_right.shape[1] or disparity > max_disparity:
         return
 
-    cost = 0.0
-    left_sum = 0.0
-    right_sum = 0.0
-    left_sum_squared = 0.0
-    right_sum_squared = 0.0
-    patch_area = (2 * patch_radius + 1) ** 2
-    for i in range(-patch_radius, patch_radius + 1):
-        for j in range(-patch_radius, patch_radius + 1):
-            xx = x + i
-            yy = y + j
-
-            left_sum += input_left[xx, yy]
-            left_sum_squared += input_left[xx, yy] ** 2
-
-            right_sum += input_right[xx, yy - disparity]
-            right_sum_squared += input_right[xx, yy - disparity] ** 2
-
-    left_mean = left_sum / patch_area
-    right_mean = right_sum / patch_area
-
-    left_stdev = math.sqrt((left_sum_squared - left_mean**2) / patch_area)
-    right_stdev = math.sqrt((right_sum_squared - right_mean**2) / patch_area)
-
-    for i in range(-patch_radius, patch_radius + 1):
-        for j in range(-patch_radius, patch_radius + 1):
-            xx = x + i
-            yy = y + j
-            cost += (input_left[xx, yy] - left_mean) * (input_right[xx, yy - disparity] - right_mean)
-
-    total_cost = cost / (patch_area * left_stdev * right_stdev)
+    # cost = 0.0
+    # left_sum = 0.0
+    # right_sum = 0.0
+    # left_sum_squared = 0.0
+    # right_sum_squared = 0.0
+    # patch_area = (2 * patch_radius + 1) ** 2
+    # for i in range(-patch_radius, patch_radius + 1):
+    #     for j in range(-patch_radius, patch_radius + 1):
+    #         xx = x + i
+    #         yy = y + j
+    #
+    #         left_sum += input_left[xx, yy]
+    #         left_sum_squared += input_left[xx, yy] ** 2
+    #
+    #         right_sum += input_right[xx, yy - disparity]
+    #         right_sum_squared += input_right[xx, yy - disparity] ** 2
+    #
+    # left_mean = left_sum / patch_area
+    # right_mean = right_sum / patch_area
+    #
+    # left_stdev = math.sqrt((left_sum_squared - left_mean**2) / patch_area)
+    # right_stdev = math.sqrt((right_sum_squared - right_mean**2) / patch_area)
+    #
+    # for i in range(-patch_radius, patch_radius + 1):
+    #     for j in range(-patch_radius, patch_radius + 1):
+    #         xx = x + i
+    #         yy = y + j
+    #         cost += (input_left[xx, yy] - left_mean) * (input_right[xx, yy - disparity] - right_mean)
+    #
+    # total_cost = cost / (patch_area * left_stdev * right_stdev)
+    total_cost = compute_sad_cost_function(input_left, input_right, x, y, disparity, patch_radius, 255)
     cost_volume[x, y, d] = total_cost
 
 
@@ -186,19 +187,19 @@ def multi_block_matching_cost_aggregation_kernel(
     # compute horizontal line block cost (3x21)
     horizontal_cost = 0.0
     for i in range(-1, 2):
-        for j in range(-10, 11):
+        for j in range(-5, 6):
             horizontal_cost += cost_volume[x + i, y + j, d]
 
     # compute vertical line block cost (21x3)
     vertical_cost = 0.0
-    for i in range(-10, 11):
+    for i in range(-5, 6):
         for j in range(-1, 2):
             vertical_cost += cost_volume[x + i, y + j, d]
 
     # compute cross block cost (9x9)
     cross_cost = 0.0
-    for i in range(-4, 5):
-        for j in range(-4, 5):
+    for i in range(-2, 3):
+        for j in range(-2, 3):
             cross_cost += cost_volume[x + i, y + j, d]
 
     total_cost = horizontal_cost * vertical_cost * cross_cost
@@ -275,8 +276,8 @@ def upscale_disparity_vertical_fill_kernel(
     prev_color = input_left[k * x, k * y]
     next_color = input_left[(k + 1) * x, k * y]
 
-    prev_disparity = downscaled_disparity[x, y]
-    next_disparity = downscaled_disparity[x - 1, y]
+    prev_disparity = k * downscaled_disparity[x, y]
+    next_disparity = k * downscaled_disparity[x - 1, y]
 
     if abs(prev_disparity - next_disparity) <= threshold:
         for i in range(1, k):
@@ -290,20 +291,34 @@ def upscale_disparity_vertical_fill_kernel(
                 upscaled_disparity[k * x + i, k * y] = next_disparity
 
 
+@cuda.jit
+def horizontal_disparity_fill_kernel(
+        input_left: DeviceNDArray,
+        disparity: DeviceNDArray,
+        k: int,
+        threshold: float
+) -> None:
+    x, y = cuda_2d_grid_coordinates()
 
-# @cuda.jit
-# def vertical_disparity_fill(
-#         input_left: DeviceNDArray,
-#         input_right: DeviceNDArray,
-#         disparity: DeviceNDArray,
-#         k: int,
-#         threshold: float
-# ) -> None:
-#     x, y = cuda_2d_grid_coordinates()
-#     x, y = k*x, k*y
-#
-#     if x >= disparity.shape[0] or y >= disparity.shape[1]:
-#         return
+    if x >= disparity.shape[0] or y >= disparity.shape[1] or y % k == 0:
+        return
+
+    i = y % k
+    nearest_k = y - i
+
+    prev_disparity = disparity[x, nearest_k]
+    next_disparity = disparity[x, nearest_k + k]
+
+    if abs(prev_disparity - next_disparity) <= threshold:
+        disparity[x, y] = prev_disparity + i * (next_disparity - prev_disparity) / k
+    else:
+        prev_color = input_left[x, nearest_k]
+        next_color = input_left[x, nearest_k + k]
+        current_color = input_left[x, y]
+        if abs(current_color - prev_color) <= abs(current_color - next_color):
+            disparity[x, y] = prev_disparity
+        else:
+            disparity[x, y] = next_disparity
 
 
 class CudaStereoMatchingBackend(StereoMatching):
@@ -326,8 +341,8 @@ def main():
     dW = math.ceil(W / K)
     min_disparity = 75 // K
     max_disparity = 262 // K
-    patch_radius = 3
-    sad_patch_radius = 12
+    patch_radius = 2
+    sad_patch_radius = 3
     threshold = 10
 
     left_image = cuda.to_device(left_image)
@@ -407,7 +422,16 @@ def main():
 
     upscaled_disparity = upscale_disparity(grayscale_left, downscaled_disparity)
 
-    Image.fromarray(np.round(upscaled_disparity.copy_to_host() * 256).astype(np.uint16)).show()
+    # DISPARITY HORIZONTAL FILL
+    def horizontal_disparity_fill(left, disparity):
+        threads = (16, 16)
+        blocks = (math.ceil(H / threads[0]), math.ceil(W / threads[1]))
+        horizontal_disparity_fill_kernel[blocks, threads](left, disparity, K, threshold)
+        return disparity
+
+    final_disparity = horizontal_disparity_fill(grayscale_left, upscaled_disparity)
+    print(final_disparity.copy_to_host())
+    Image.fromarray(np.round(final_disparity.copy_to_host() * 256).astype(np.uint16)).show()
 
 
 if __name__ == "__main__":
