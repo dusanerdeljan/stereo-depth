@@ -255,10 +255,12 @@ def secondary_matching_kernel(
 
 
 @cuda.jit
-def upscale_disparity_kernel(
+def upscale_disparity_vertical_fill_kernel(
+        input_left: DeviceNDArray,
         downscaled_disparity: DeviceNDArray,
         upscaled_disparity: DeviceNDArray,
-        k: int
+        k: int,
+        threshold: float
 ) -> None:
     x, y = cuda_2d_grid_coordinates()
 
@@ -266,6 +268,42 @@ def upscale_disparity_kernel(
         return
 
     upscaled_disparity[k * x, k * y] = k * downscaled_disparity[x, y]
+
+    if x == 0:
+        return
+
+    prev_color = input_left[k * x, k * y]
+    next_color = input_left[(k + 1) * x, k * y]
+
+    prev_disparity = downscaled_disparity[x, y]
+    next_disparity = downscaled_disparity[x - 1, y]
+
+    if abs(prev_disparity - next_disparity) <= threshold:
+        for i in range(1, k):
+            upscaled_disparity[k * x + i, k * y] = prev_disparity + i * (next_disparity - prev_disparity) / k
+    else:
+        for i in range(1, k):
+            current_color = input_left[k * x + i, k * y]
+            if abs(current_color - prev_color) <= abs(current_color - next_color):
+                upscaled_disparity[k * x + i, k * y] = prev_disparity
+            else:
+                upscaled_disparity[k * x + i, k * y] = next_disparity
+
+
+
+# @cuda.jit
+# def vertical_disparity_fill(
+#         input_left: DeviceNDArray,
+#         input_right: DeviceNDArray,
+#         disparity: DeviceNDArray,
+#         k: int,
+#         threshold: float
+# ) -> None:
+#     x, y = cuda_2d_grid_coordinates()
+#     x, y = k*x, k*y
+#
+#     if x >= disparity.shape[0] or y >= disparity.shape[1]:
+#         return
 
 
 class CudaStereoMatchingBackend(StereoMatching):
@@ -290,6 +328,7 @@ def main():
     max_disparity = 262 // K
     patch_radius = 3
     sad_patch_radius = 12
+    threshold = 10
 
     left_image = cuda.to_device(left_image)
     right_image = cuda.to_device(right_image)
@@ -359,14 +398,14 @@ def main():
     downscaled_disparity = secondary_matching(grayscale_left, grayscale_right, aggregated_cost, downscaled_disparity)
 
     # UPSCALE DISPARITY KERNEL
-    def upscale_disparity(disparity):
+    def upscale_disparity(left, disparity):
         out_disp = cuda.device_array(shape=(H, W))
         threads = (16, 16)
         blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]))
-        upscale_disparity_kernel[blocks, threads](disparity, out_disp, K)
+        upscale_disparity_vertical_fill_kernel[blocks, threads](left, disparity, out_disp, K, threshold)
         return out_disp
 
-    upscaled_disparity = upscale_disparity(downscaled_disparity)
+    upscaled_disparity = upscale_disparity(grayscale_left, downscaled_disparity)
 
     Image.fromarray(np.round(upscaled_disparity.copy_to_host() * 256).astype(np.uint16)).show()
 
