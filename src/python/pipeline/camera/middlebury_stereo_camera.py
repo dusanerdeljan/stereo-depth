@@ -4,6 +4,7 @@ from typing import Tuple, Iterator, Optional
 
 import cv2
 import numpy as np
+from PIL import Image
 
 from helpers.paths import python_project_relative_path
 from pipeline.camera.camera import Camera
@@ -55,8 +56,8 @@ class MiddleBuryStereoCamera(Camera):
         right_image_path = os.path.join(middlebury_dir, "right.png")
         calibration_file_path = os.path.join(middlebury_dir, "calib.txt")
 
-        self._left_image = cv2.imread(left_image_path, 0)
-        self._right_image = cv2.imread(right_image_path, 0)
+        self._left_image = np.array(Image.open(left_image_path).convert("L"))
+        self._right_image = np.array(Image.open(right_image_path).convert("L"))
         self._calibration = MiddleBuryStereoCamera._load_calibration_file(calibration_file_path)
 
     def focal_length(self) -> float:

@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from helpers.paths import python_project_relative_path
-from pipeline.depth import StereoMatching, DnnStereoMatchingBackend
+from pipeline.depth import StereoMatching, DnnStereoMatchingBackend, CudaStereoMatchingBackend
 from pipeline.synthesis import RightViewSynthesis
 
 
@@ -17,7 +17,7 @@ class DepthEstimationPipelineConfig:
     max_disparity: int = 16
     invalid_disparity: float = -1.0
     dnn_stereo_matching_path = python_project_relative_path("data/traced/traced_MSNet3D.pt")
-    stereo_matching_backend: Literal["dnn"] = "dnn"
+    stereo_matching_backend: Literal["dnn", "cuda"] = "cuda"
 
 
 class DepthEstimationPipeline:
@@ -42,6 +42,9 @@ class DepthEstimationPipeline:
             stereo_matching = DnnStereoMatchingBackend(
                 traced_model_path=self._config.dnn_stereo_matching_path
             )
+            return stereo_matching
+        elif self._config.stereo_matching_backend == "cuda":
+            stereo_matching = CudaStereoMatchingBackend()
             return stereo_matching
         else:
             raise RuntimeError(f"Unsupported stereo matching backend: {self._config.stereo_matching_backend}")
