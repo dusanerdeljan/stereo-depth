@@ -120,37 +120,38 @@ def ncc_matching_cost_volume_kernel(
     if x >= input_left.shape[0] or y >= input_right.shape[1] or disparity > max_disparity:
         return
 
-    # cost = 0.0
-    # left_sum = 0.0
-    # right_sum = 0.0
-    # left_sum_squared = 0.0
-    # right_sum_squared = 0.0
-    # patch_area = (2 * patch_radius + 1) ** 2
-    # for i in range(-patch_radius, patch_radius + 1):
-    #     for j in range(-patch_radius, patch_radius + 1):
-    #         xx = x + i
-    #         yy = y + j
-    #
-    #         left_sum += input_left[xx, yy]
-    #         left_sum_squared += input_left[xx, yy] ** 2
-    #
-    #         right_sum += input_right[xx, yy - disparity]
-    #         right_sum_squared += input_right[xx, yy - disparity] ** 2
-    #
-    # left_mean = left_sum / patch_area
-    # right_mean = right_sum / patch_area
-    #
-    # left_stdev = math.sqrt((left_sum_squared - left_mean**2) / patch_area)
-    # right_stdev = math.sqrt((right_sum_squared - right_mean**2) / patch_area)
-    #
-    # for i in range(-patch_radius, patch_radius + 1):
-    #     for j in range(-patch_radius, patch_radius + 1):
-    #         xx = x + i
-    #         yy = y + j
-    #         cost += (input_left[xx, yy] - left_mean) * (input_right[xx, yy - disparity] - right_mean)
-    #
-    # total_cost = cost / (patch_area * left_stdev * right_stdev)
-    total_cost = compute_sad_cost_function(input_left, input_right, x, y, disparity, patch_radius, 255)
+    cost = 0.0
+    left_sum = 0.0
+    right_sum = 0.0
+    left_sum_squared = 0.0
+    right_sum_squared = 0.0
+    patch_area = (2 * patch_radius + 1) ** 2
+    for i in range(-patch_radius, patch_radius + 1):
+        for j in range(-patch_radius, patch_radius + 1):
+            xx = x + i
+            yy = y + j
+
+            left_sum += input_left[xx, yy]
+            left_sum_squared += input_left[xx, yy] ** 2
+
+            right_sum += input_right[xx, yy - disparity]
+            right_sum_squared += input_right[xx, yy - disparity] ** 2
+
+    left_mean = left_sum / patch_area
+    right_mean = right_sum / patch_area
+
+    left_stdev = math.sqrt((left_sum_squared - left_mean**2) / patch_area)
+    right_stdev = math.sqrt((right_sum_squared - right_mean**2) / patch_area)
+
+    for i in range(-patch_radius, patch_radius + 1):
+        for j in range(-patch_radius, patch_radius + 1):
+            xx = x + i
+            yy = y + j
+            cost += (input_left[xx, yy] - left_mean) * (input_right[xx, yy - disparity] - right_mean)
+
+    denominator = (patch_area * left_stdev * right_stdev)
+    total_cost = cost / denominator if denominator != 0 else 0
+    # total_cost = compute_sad_cost_function(input_left, input_right, x, y, disparity, patch_radius, 255)
     cost_volume[x, y, d] = total_cost
 
 
@@ -187,19 +188,19 @@ def multi_block_matching_cost_aggregation_kernel(
     # compute horizontal line block cost (3x21)
     horizontal_cost = 0.0
     for i in range(-1, 2):
-        for j in range(-5, 6):
+        for j in range(-10, 11):
             horizontal_cost += cost_volume[x + i, y + j, d]
 
     # compute vertical line block cost (21x3)
     vertical_cost = 0.0
-    for i in range(-5, 6):
+    for i in range(-10, 11):
         for j in range(-1, 2):
             vertical_cost += cost_volume[x + i, y + j, d]
 
     # compute cross block cost (9x9)
     cross_cost = 0.0
-    for i in range(-2, 3):
-        for j in range(-2, 3):
+    for i in range(-4, 5):
+        for j in range(-4, 5):
             cross_cost += cost_volume[x + i, y + j, d]
 
     total_cost = horizontal_cost * vertical_cost * cross_cost
@@ -333,17 +334,17 @@ class CudaStereoMatchingBackend(StereoMatching):
 
 
 def main():
-    left_image = np.asarray(Image.open("../../data/left.png").convert("RGB"))
-    right_image = np.asarray(Image.open("../../data/right.png").convert("RGB"))
+    left_image = np.asarray(Image.open("../../data/temp/generated_left_view.png").convert("RGB"))
+    right_image = np.asarray(Image.open("../../data/temp/generated_right_view.png").convert("RGB"))
     H, W, C = left_image.shape
     K = 2
     dH = math.ceil(H / K)
     dW = math.ceil(W / K)
-    min_disparity = 75 // K
-    max_disparity = 262 // K
-    patch_radius = 2
-    sad_patch_radius = 3
-    threshold = 10
+    min_disparity = 1 // K
+    max_disparity = 64 // K
+    patch_radius = 1
+    sad_patch_radius = 5
+    threshold = 5
 
     left_image = cuda.to_device(left_image)
     right_image = cuda.to_device(right_image)
