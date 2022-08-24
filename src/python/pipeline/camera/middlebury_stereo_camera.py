@@ -56,8 +56,8 @@ class MiddleBuryStereoCamera(Camera):
         right_image_path = os.path.join(middlebury_dir, "right.png")
         calibration_file_path = os.path.join(middlebury_dir, "calib.txt")
 
-        self._left_image = np.array(Image.open(left_image_path).convert("L"))
-        self._right_image = np.array(Image.open(right_image_path).convert("L"))
+        self._left_image = np.array(Image.open(left_image_path).convert("RGB"))
+        self._right_image = np.array(Image.open(right_image_path).convert("RGB"))
         self._calibration = MiddleBuryStereoCamera._load_calibration_file(calibration_file_path)
 
     def focal_length(self) -> float:

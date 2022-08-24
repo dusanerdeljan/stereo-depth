@@ -1,6 +1,8 @@
+import math
 from typing import Tuple
 
 import numpy as np
+from PIL import Image
 from numba import cuda
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 
@@ -56,25 +58,44 @@ def wta_cost_volume_construction_kernel(
     output_disparity[x, y] = best_disparity
 
 
+@cuda.jit
+def grayscale_kernel(
+        input_image: DeviceNDArray,
+        output_image: DeviceNDArray
+) -> None:
+    x, y = cuda_2d_grid_coordinates()
+
+    if x >= input_image.shape[0] or y >= input_image.shape[1]:
+        return
+
+    R = input_image[x, y, 0]
+    G = input_image[x, y, 1]
+    B = input_image[x, y, 2]
+
+    output_image[x, y] = 0.2989 * R + 0.5870 * G + 0.1140 * B
+
+
 class CudaStereoMatchingBackend(StereoMatching):
 
     def process(self, left_image: np.ndarray, right_image: np.ndarray) -> np.ndarray:
-        H, W = left_image.shape
+        H, W, C = left_image.shape
         device_left = cuda.to_device(left_image)
         device_right = cuda.to_device(right_image)
         output_disparity = cuda.device_array(shape=(H, W))
 
-        threads_per_block = (16, 16)
-        num_blocks = (
-            (H + threads_per_block[0] - 1) // threads_per_block[0],
-            (W + threads_per_block[1] - 1) // threads_per_block[1]
-        )
-        wta_cost_volume_construction_kernel[num_blocks, threads_per_block](
-            device_left,
-            device_right,
-            output_disparity,
-            75,
-            262,
-            7
-        )
         return output_disparity.copy_to_host()
+
+
+if __name__ == "__main__":
+    left_image = Image.open("../../data/left.png").convert("RGB")
+    input_image = np.asarray(left_image)
+
+    input_image = cuda.to_device(input_image)
+    output_image = cuda.device_array(shape=(input_image.shape[0], input_image.shape[1]))
+    threads = (16, 16)
+    blocks = (
+        math.ceil(output_image.shape[0] / threads[0]),
+        math.ceil(output_image.shape[1] / threads[1])
+    )
+    grayscale_kernel[blocks, threads](input_image, output_image)
+    Image.fromarray(output_image.copy_to_host()).show()

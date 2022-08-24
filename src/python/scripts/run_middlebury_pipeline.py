@@ -13,7 +13,7 @@ if __name__ == "__main__":
         pipeline=depth_pipeline,
         hooks=[
             DisparityMapSaver(save_dir="data/temp"),
-            #PointCloudSaver.for_camera(camera=camera, save_dir="data/temp", invalid_disparity=-1.0),
+            PointCloudSaver.for_camera(camera=camera, save_dir="data/temp", invalid_disparity=-1.0),
         ]
     )
 
