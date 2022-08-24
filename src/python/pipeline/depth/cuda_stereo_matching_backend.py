@@ -147,13 +147,13 @@ def multi_block_matching_cost_aggregation_kernel(
             horizontal_cost += cost_volume[x + i, y + j, d]
 
     # compute vertical line block cost (21x3)
-    vertical_cost = 1.0
+    vertical_cost = 0.0
     for i in range(-10, 11):
         for j in range(-1, 2):
             vertical_cost += cost_volume[x + i, y + j, d]
 
     # compute cross block cost (9x9)
-    cross_cost = 1.0
+    cross_cost = 0.0
     for i in range(-4, 5):
         for j in range(-4, 5):
             cross_cost += cost_volume[x + i, y + j, d]
