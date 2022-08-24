@@ -254,6 +254,25 @@ def secondary_matching_kernel(
             downscaled_disparity[x, y] = (d_mbm + delta_mbm + ((d_sad + delta_sad) / k)) / 2
 
 
+@cuda.jit
+def upscale_disparity_kernel(
+        input_left: DeviceNDArray,
+        input_right: DeviceNDArray,
+        downscaled_disparity: DeviceNDArray,
+        upsacled_disparity: DeviceNDArray,
+        k: int
+) -> None:
+    x, y = cuda_2d_grid_coordinates()
+
+    if x >= upsacled_disparity.shape[0] or y >= upsacled_disparity.shape[1] or x % k != 0 or y % k != 0:
+        return
+
+    if x % k == 0 and y % k == 0:
+        upsacled_disparity[x, y] = k * downscaled_disparity[x // k, y // k]
+    else:
+        pass
+
+
 class CudaStereoMatchingBackend(StereoMatching):
 
     def process(self, left_image: np.ndarray, right_image: np.ndarray) -> np.ndarray:
@@ -344,7 +363,17 @@ def main():
 
     downscaled_disparity = secondary_matching(grayscale_left, grayscale_right, aggregated_cost, downscaled_disparity)
 
-    Image.fromarray(np.round(downscaled_disparity.copy_to_host() * 256).astype(np.uint16)).show()
+    # UPSCALE DISPARITY KERNEL
+    def upsacle_disparity(left, right, disparity):
+        out_disp = cuda.device_array(shape=(H, W))
+        threads = (16, 16)
+        blocks = (math.ceil(H / threads[0]), math.ceil(W / threads[1]))
+        upscale_disparity_kernel[blocks, threads](left, right, disparity, out_disp, K)
+        return out_disp
+
+    upscaled_disparity = upsacle_disparity(grayscale_left, grayscale_right, downscaled_disparity)
+
+    Image.fromarray(np.round(upscaled_disparity.copy_to_host() * 256).astype(np.uint16)).show()
 
 
 if __name__ == "__main__":
