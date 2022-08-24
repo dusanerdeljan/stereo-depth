@@ -107,7 +107,6 @@ def ncc_matching_cost_volume_kernel(
             cost += (input_left[xx, yy] - left_mean) * (input_right[xx, yy - disparity] - right_mean)
 
     total_cost = cost / (patch_area * left_stdev * right_stdev)
-
     cost_volume[x, y, d] = total_cost
 
 
@@ -131,6 +130,38 @@ def wta_disparity_selection_kernel(
     output_disparity[x, y] = best_disparity + min_disparity
 
 
+@cuda.jit
+def multi_block_matching_cost_aggregation_kernel(
+        cost_volume: DeviceNDArray,
+        block_cost_volume: DeviceNDArray
+) -> None:
+    x, y, d = cuda_3d_grid_coordinates()
+
+    if x >= cost_volume.shape[0] or y >= cost_volume.shape[1] or d > cost_volume.shape[2]:
+        return
+
+    # compute horizontal line block cost (3x21)
+    horizontal_cost = 0.0
+    for i in range(-1, 2):
+        for j in range(-10, 11):
+            horizontal_cost += cost_volume[x + i, y + j, d]
+
+    # compute vertical line block cost (21x3)
+    vertical_cost = 1.0
+    for i in range(-10, 11):
+        for j in range(-1, 2):
+            vertical_cost += cost_volume[x + i, y + j, d]
+
+    # compute cross block cost (9x9)
+    cross_cost = 1.0
+    for i in range(-4, 5):
+        for j in range(-4, 5):
+            cross_cost += cost_volume[x + i, y + j, d]
+
+    total_cost = horizontal_cost * vertical_cost * cross_cost
+    block_cost_volume[x, y, d] = total_cost
+
+
 class CudaStereoMatchingBackend(StereoMatching):
 
     def process(self, left_image: np.ndarray, right_image: np.ndarray) -> np.ndarray:
@@ -149,8 +180,8 @@ def main():
     K = 2
     dH = math.ceil(H / K)
     dW = math.ceil(W / K)
-    min_disparity = 75
-    max_disparity = 262
+    min_disparity = 75 // K
+    max_disparity = 262 // K
     patch_radius = 1
 
     left_image = cuda.to_device(left_image)
@@ -190,6 +221,17 @@ def main():
 
     matching_cost = cost_volume(downscaled_left, downscaled_right)
 
+    # MULTI BLOCK MATCHING COST AGGREGATION
+    def mbm_cost_aggregation(cost):
+        disparity_range = max_disparity - min_disparity + 1
+        mbm_cost_volume = cuda.device_array(shape=(dH, dW, disparity_range))
+        threads = (16, 16, 1)
+        blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]), disparity_range)
+        multi_block_matching_cost_aggregation_kernel[blocks, threads](cost, mbm_cost_volume)
+        return mbm_cost_volume
+
+    aggregated_cost = mbm_cost_aggregation(matching_cost)
+
     # WTA DISPARITY SELECTION
     def select_disparity_wta(cost):
         output_disp = cuda.device_array(shape=(dH, dW))
@@ -198,9 +240,7 @@ def main():
         wta_disparity_selection_kernel[blocks, threads](cost, output_disp, min_disparity)
         return output_disp
 
-    output_disparity = select_disparity_wta(matching_cost)
-    print(output_disparity.shape)
-    print(output_disparity.copy_to_host())
+    output_disparity = select_disparity_wta(aggregated_cost)
     Image.fromarray(np.round(output_disparity.copy_to_host() * 256).astype(np.uint16)).show()
 
 
