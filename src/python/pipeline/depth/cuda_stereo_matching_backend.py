@@ -2,6 +2,7 @@ import math
 from typing import Tuple
 
 import numpy as np
+import skimage
 from PIL import Image
 from numba import cuda
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
@@ -22,48 +23,6 @@ def cuda_3d_grid_coordinates() -> Tuple[int, int, int]:
     y = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
     z = cuda.blockIdx.z * cuda.blockDim.z + cuda.threadIdx.z
     return x, y, z
-
-
-@cuda.jit(device=True)
-def compute_cost_function(
-        input_left: DeviceNDArray,
-        input_right: DeviceNDArray,
-        x: int,
-        y: int,
-        disparity: int,
-        patch_radius: int
-) -> float:
-    total_cost = 0.0
-    for xx in range(-patch_radius, patch_radius + 1):
-        for yy in range(-patch_radius, patch_radius + 1):
-            total_cost += abs(input_left[x, y] - input_right[x, y - disparity])
-    return total_cost
-
-
-@cuda.jit
-def wta_cost_volume_construction_kernel(
-        input_left: DeviceNDArray,
-        input_right: DeviceNDArray,
-        output_disparity: DeviceNDArray,
-        min_disparity: int,
-        max_disparity: int,
-        patch_radius: int
-) -> None:
-    x, y = cuda_2d_grid_coordinates()
-
-    if x >= input_left.shape[0] or y >= input_left.shape[1]:
-        return
-
-    best_disparity = min_disparity
-    best_cost = 1e38
-
-    for disparity in range(min_disparity, max_disparity + 1):
-        cost = compute_cost_function(input_left, input_right, x, y, disparity, patch_radius)
-        if cost < best_cost:
-            best_cost = cost
-            best_disparity = disparity
-
-    output_disparity[x, y] = best_disparity
 
 
 @cuda.jit
@@ -126,11 +85,14 @@ def ncc_matching_cost_volume_kernel(
     patch_area = (2 * patch_radius + 1) ** 2
     for i in range(-patch_radius, patch_radius + 1):
         for j in range(-patch_radius, patch_radius + 1):
-            left_sum += input_left[i, j]
-            left_sum_squared += input_left[i, j] ** 2
+            xx = x + i
+            yy = y + j
 
-            right_sum += input_right[i, j - disparity]
-            right_sum_squared += input_right[i, j - disparity] ** 2
+            left_sum += input_left[xx, yy]
+            left_sum_squared += input_left[xx, yy] ** 2
+
+            right_sum += input_right[xx, yy - disparity]
+            right_sum_squared += input_right[xx, yy - disparity] ** 2
 
     left_mean = left_sum / patch_area
     right_mean = right_sum / patch_area
@@ -140,9 +102,33 @@ def ncc_matching_cost_volume_kernel(
 
     for i in range(-patch_radius, patch_radius + 1):
         for j in range(-patch_radius, patch_radius + 1):
-            cost += (input_left[i, j] - left_mean) * (input_right[i, j - disparity] - right_mean)
+            xx = x + i
+            yy = y + j
+            cost += (input_left[xx, yy] - left_mean) * (input_right[xx, yy - disparity] - right_mean)
 
-    cost_volume[x, y, d] = cost / (patch_area * left_stdev * right_stdev)
+    total_cost = cost / (patch_area * left_stdev * right_stdev)
+
+    cost_volume[x, y, d] = total_cost
+
+
+@cuda.jit
+def wta_disparity_selection_kernel(
+        cost_volume: DeviceNDArray,
+        output_disparity: DeviceNDArray,
+        min_disparity: int
+) -> None:
+    x, y = cuda_2d_grid_coordinates()
+
+    if x >= output_disparity.shape[0] or y >= output_disparity.shape[1]:
+        return
+
+    best_cost = -1e38
+    best_disparity = 0
+    for disparity in range(cost_volume.shape[2]):
+        if cost_volume[x, y, disparity] > best_cost:
+            best_cost = cost_volume[x, y, disparity]
+            best_disparity = disparity
+    output_disparity[x, y] = best_disparity + min_disparity
 
 
 class CudaStereoMatchingBackend(StereoMatching):
@@ -192,6 +178,7 @@ def main():
     downscaled_left = downscale(grayscale_left)
     downscaled_right = downscale(grayscale_right)
 
+    # COST VOLUME CONSTRUCTION
     def cost_volume(left, right):
         disparity_range = max_disparity - min_disparity + 1
         ncc_cost_volume = cuda.device_array(shape=(dH, dW, disparity_range))
@@ -202,9 +189,19 @@ def main():
         return ncc_cost_volume
 
     matching_cost = cost_volume(downscaled_left, downscaled_right)
-    print(matching_cost.shape)
 
-    Image.fromarray(downscaled_right.copy_to_host()).show()
+    # WTA DISPARITY SELECTION
+    def select_disparity_wta(cost):
+        output_disp = cuda.device_array(shape=(dH, dW))
+        threads = (16, 16)
+        blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]))
+        wta_disparity_selection_kernel[blocks, threads](cost, output_disp, min_disparity)
+        return output_disp
+
+    output_disparity = select_disparity_wta(matching_cost)
+    print(output_disparity.shape)
+    print(output_disparity.copy_to_host())
+    Image.fromarray(np.round(output_disparity.copy_to_host() * 256).astype(np.uint16)).show()
 
 
 if __name__ == "__main__":
