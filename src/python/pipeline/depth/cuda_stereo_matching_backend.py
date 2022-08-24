@@ -25,6 +25,49 @@ def cuda_3d_grid_coordinates() -> Tuple[int, int, int]:
     return x, y, z
 
 
+@cuda.jit(device=True, inline=True)
+def have_same_sign(a: float, b: float) -> bool:
+    return (a * b) >= 0
+
+
+@cuda.jit(device=True, inline=True)
+def quadratic_function_min(
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        x3: float,
+        y3: float
+) -> float:
+    denominator = (x1 - x2) * (x2 - x3) * (x1 - x3)
+    if y1 < y2:
+        min_value = x1 if y1 < y3 else x3
+    else:
+        min_value = x2 if y2 < y3 else x3
+    if denominator != 0:
+        a = x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)
+        b = x1**2 * (y2 - y3) + x3**2 * (y1 - y2) + x2**2 * (y3 - y1)
+        min_value = -b / (2*a)
+    return min_value
+
+
+@cuda.jit(device=True)
+def compute_sad_cost_function(
+        input_left: DeviceNDArray,
+        input_right: DeviceNDArray,
+        x: int,
+        y: int,
+        disparity: int,
+        patch_radius: int,
+        max_val: float,
+) -> float:
+    total_cost = 0.0
+    for i in range(-patch_radius, patch_radius + 1):
+        for j in range(-patch_radius, patch_radius + 1):
+            total_cost += max_val - abs(input_left[x+i, y+j] - input_right[x+i, y+j-disparity])
+    return total_cost
+
+
 @cuda.jit
 def grayscale_kernel(
         input_image: DeviceNDArray,
@@ -162,6 +205,55 @@ def multi_block_matching_cost_aggregation_kernel(
     block_cost_volume[x, y, d] = total_cost
 
 
+@cuda.jit
+def secondary_matching_kernel(
+        input_left: DeviceNDArray,
+        input_right: DeviceNDArray,
+        cost_volume: DeviceNDArray,
+        downscaled_disparity: DeviceNDArray,
+        patch_radius: int,
+        k: int
+) -> None:
+    x, y = cuda_2d_grid_coordinates()
+
+    if x >= downscaled_disparity.shape[0] or y >= downscaled_disparity.shape[1]:
+        return
+
+    d_mbm = downscaled_disparity[x, y]
+    d_mbm_minus_one = k * (d_mbm - 1)
+    d_mbm_plus_one = k * (d_mbm + 1)
+
+    def read_mbm_disparity_cost(d: int) -> float:
+        return cost_volume[x, y, int(d)]
+
+    def read_sad_disparity_cost(d: int) -> float:
+        return compute_sad_cost_function(input_left, input_right, x*k, y*k, int(d), patch_radius, 255)
+
+    # SAD cost computation
+    c_sad = -1e38
+    d_sad = d_mbm_minus_one
+    for sad_disparity in range(d_mbm_minus_one, d_mbm_plus_one + 1):
+        sad_cost = read_sad_disparity_cost(sad_disparity)
+        if sad_cost > c_sad:
+            d_sad = sad_disparity
+            c_sad = sad_cost
+
+    if d_mbm_minus_one < d_sad < d_mbm_plus_one:
+        # Disparity refinement
+        mbm_quadratic_min = quadratic_function_min(d_mbm, read_mbm_disparity_cost(d_mbm),
+                                                   d_mbm + 1, read_mbm_disparity_cost(d_mbm + 1),
+                                                   d_mbm - 1, read_mbm_disparity_cost(d_mbm - 1))
+        sad_quadratic_min = quadratic_function_min(d_sad, c_sad,
+                                                   d_sad + 1, read_sad_disparity_cost(d_sad + 1),
+                                                   d_sad - 1, read_sad_disparity_cost(d_sad - 1))
+        delta_mbm = mbm_quadratic_min - d_mbm
+        delta_sad = sad_quadratic_min - d_sad
+        if have_same_sign(delta_mbm, d_sad + delta_sad - k * d_mbm):
+            downscaled_disparity[x, y] = (d_sad + delta_sad) / k
+        else:
+            downscaled_disparity[x, y] = (d_mbm + delta_mbm + ((d_sad + delta_sad) / k)) / 2
+
+
 class CudaStereoMatchingBackend(StereoMatching):
 
     def process(self, left_image: np.ndarray, right_image: np.ndarray) -> np.ndarray:
@@ -182,7 +274,8 @@ def main():
     dW = math.ceil(W / K)
     min_disparity = 75 // K
     max_disparity = 262 // K
-    patch_radius = 1
+    patch_radius = 3
+    sad_patch_radius = 12
 
     left_image = cuda.to_device(left_image)
     right_image = cuda.to_device(right_image)
@@ -240,8 +333,18 @@ def main():
         wta_disparity_selection_kernel[blocks, threads](cost, output_disp, min_disparity)
         return output_disp
 
-    output_disparity = select_disparity_wta(aggregated_cost)
-    Image.fromarray(np.round(output_disparity.copy_to_host() * 256).astype(np.uint16)).show()
+    downscaled_disparity = select_disparity_wta(aggregated_cost)
+
+    # SECONDARY MATCHING
+    def secondary_matching(left, right, cost, disparity):
+        threads = (16, 16)
+        blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]))
+        secondary_matching_kernel[blocks, threads](left, right, cost, disparity, sad_patch_radius, K)
+        return disparity
+
+    downscaled_disparity = secondary_matching(grayscale_left, grayscale_right, aggregated_cost, downscaled_disparity)
+
+    Image.fromarray(np.round(downscaled_disparity.copy_to_host() * 256).astype(np.uint16)).show()
 
 
 if __name__ == "__main__":
