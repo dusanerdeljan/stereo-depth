@@ -6,7 +6,8 @@ setup(
     ext_modules=[
         CUDAExtension("cuda_imageops", [
             "torch_extension_module.cc",
-            "grayscale_gradient.cc"
+            "grayscale_gradient.cc",
+            "kernels/rgb_to_grayscale.cu"
         ])
     ],
     cmdclass={
