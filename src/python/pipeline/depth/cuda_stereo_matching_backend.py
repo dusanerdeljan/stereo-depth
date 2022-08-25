@@ -383,16 +383,16 @@ def main():
 
     matching_cost = cost_volume(downscaled_left, downscaled_right)
 
-    # # MULTI BLOCK MATCHING COST AGGREGATION
-    # def mbm_cost_aggregation(cost):
-    #     disparity_range = max_disparity - min_disparity + 1
-    #     mbm_cost_volume = cuda.device_array(shape=(dH, dW, disparity_range))
-    #     threads = (16, 16, 1)
-    #     blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]), disparity_range)
-    #     multi_block_matching_cost_aggregation_kernel[blocks, threads](cost, mbm_cost_volume)
-    #     return mbm_cost_volume
-    #
-    # aggregated_cost = mbm_cost_aggregation(matching_cost)
+    # MULTI BLOCK MATCHING COST AGGREGATION
+    def mbm_cost_aggregation(cost):
+        disparity_range = max_disparity - min_disparity + 1
+        mbm_cost_volume = cuda.device_array(shape=(dH, dW, disparity_range))
+        threads = (16, 16, 1)
+        blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]), disparity_range)
+        multi_block_matching_cost_aggregation_kernel[blocks, threads](cost, mbm_cost_volume)
+        return mbm_cost_volume
+
+    aggregated_cost = mbm_cost_aggregation(matching_cost)
 
     # WTA DISPARITY SELECTION
     def select_disparity_wta(cost):
@@ -402,7 +402,7 @@ def main():
         wta_disparity_selection_kernel[blocks, threads](cost, output_disp, min_disparity)
         return output_disp
 
-    downscaled_disparity = select_disparity_wta(matching_cost)
+    downscaled_disparity = select_disparity_wta(aggregated_cost)
 
     # # SECONDARY MATCHING
     # def secondary_matching(left, right, cost, disparity):

@@ -14,6 +14,8 @@ public:
 private:
     void ncc_matching_cost_volume_construction();
 
+    void multi_block_matching_cost_aggregation();
+
     void wta_disparity_selection();
 
     stereo_matching_configuration m_config;
