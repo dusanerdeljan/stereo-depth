@@ -1,17 +1,6 @@
 import os.path
 from typing import Tuple, List
 
-import numpy as np
-
-
-def rescale_image_to_uint8_range(image: np.ndarray) -> np.ndarray:
-    min_val = np.min(image)
-    max_val = np.max(image)
-
-    image = image - min_val
-    image = image * 255.0 / (max_val - min_val)
-    return image
-
 
 def read_kitti_drive_stereo_pairs(drive_dir: str) -> Tuple[List[str], List[str]]:
     left_image_dir = os.path.join(drive_dir, "image_02", "data")
