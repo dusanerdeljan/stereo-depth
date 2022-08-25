@@ -9,9 +9,13 @@ class stereo_matching {
 public:
     stereo_matching(const stereo_matching_configuration& configuration);
 
-    torch::Tensor compute_disparity_map(torch::Tensor left, torch::Tensor right);
+    torch::Tensor compute_disparity_map(torch::Tensor left_image, torch::Tensor right_image);
 
 private:
+    void grayscale(torch::Tensor left_image, torch::Tensor right_image);
+
+    void downscale();
+
     void ncc_matching_cost_volume_construction();
 
     void multi_block_matching_cost_aggregation();

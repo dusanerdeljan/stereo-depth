@@ -5,7 +5,7 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     py::class_<stereo_matching_configuration>(m, "StereoMatchingConfiguration")
-        .def(py::init<uint32_t, uint32_t, uint32_t, int32_t, int32_t, uint32_t, uint32_t, uint32_t>(),
+        .def(py::init<uint32_t, uint32_t, uint32_t, int32_t, int32_t, uint32_t, uint32_t, uint32_t, int32_t, int32_t, int32_t>(),
             py::arg("height") = 1080,
             py::arg("width") = 1980,
             py::arg("downscale_factor") = 2,
@@ -13,7 +13,10 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
             py::arg("max_disparity") = 262,
             py::arg("ncc_patch_radius") = 1,
             py::arg("sad_patch_radius") = 5,
-            py::arg("threshold") = 5
+            py::arg("threshold") = 5,
+            py::arg("small_mbm_radius") = 1,
+            py::arg("mid_mbm_radius") = 4,
+            py::arg("large_mbm_radius") = 10
         );
 
     py::class_<stereo_matching>(m, "StereoMatching")
