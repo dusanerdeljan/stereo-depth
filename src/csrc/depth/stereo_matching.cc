@@ -4,6 +4,7 @@
 #include "../imageops/mean_pool.hh"
 
 #include "kernels/ncc_matching_cost_volume_construction.hh"
+#include "kernels/wta_disparity_selection.hh"
 
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
@@ -26,7 +27,9 @@ torch::Tensor stereo_matching::compute_disparity_map(torch::Tensor left_image, t
 
     ncc_matching_cost_volume_construction();
 
-    return m_buffer.output_disparity;
+    wta_disparity_selection();
+
+    return m_buffer.downscaled_disparity;
 }
 
 void stereo_matching::ncc_matching_cost_volume_construction() {
@@ -38,5 +41,14 @@ void stereo_matching::ncc_matching_cost_volume_construction() {
         m_config.ncc_patch_radius,
         m_config.min_disparity / m_config.downscale_factor,
         m_config.max_disparity / m_config.downscale_factor
+    );
+}
+
+void stereo_matching::wta_disparity_selection() {
+    std::cout << "calling wta_disparity_selection_cuda" << std::endl;
+    wta_disparity_selection_cuda(
+        m_buffer.matching_cost_volume,
+        m_buffer.downscaled_disparity,
+        m_config.min_disparity / m_config.downscale_factor
     );
 }

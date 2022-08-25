@@ -334,14 +334,14 @@ class CudaStereoMatchingBackend(StereoMatching):
 
 
 def main():
-    left_image = np.asarray(Image.open("../../data/temp/generated_left_view.png").convert("RGB"))
-    right_image = np.asarray(Image.open("../../data/temp/generated_right_view.png").convert("RGB"))
+    left_image = np.asarray(Image.open("../../data/left.png").convert("RGB"))
+    right_image = np.asarray(Image.open("../../data/right.png").convert("RGB"))
     H, W, C = left_image.shape
     K = 2
     dH = math.ceil(H / K)
     dW = math.ceil(W / K)
-    min_disparity = 1 // K
-    max_disparity = 64 // K
+    min_disparity = 75 // K
+    max_disparity = 262 // K
     patch_radius = 1
     sad_patch_radius = 5
     threshold = 5
@@ -383,16 +383,16 @@ def main():
 
     matching_cost = cost_volume(downscaled_left, downscaled_right)
 
-    # MULTI BLOCK MATCHING COST AGGREGATION
-    def mbm_cost_aggregation(cost):
-        disparity_range = max_disparity - min_disparity + 1
-        mbm_cost_volume = cuda.device_array(shape=(dH, dW, disparity_range))
-        threads = (16, 16, 1)
-        blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]), disparity_range)
-        multi_block_matching_cost_aggregation_kernel[blocks, threads](cost, mbm_cost_volume)
-        return mbm_cost_volume
-
-    aggregated_cost = mbm_cost_aggregation(matching_cost)
+    # # MULTI BLOCK MATCHING COST AGGREGATION
+    # def mbm_cost_aggregation(cost):
+    #     disparity_range = max_disparity - min_disparity + 1
+    #     mbm_cost_volume = cuda.device_array(shape=(dH, dW, disparity_range))
+    #     threads = (16, 16, 1)
+    #     blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]), disparity_range)
+    #     multi_block_matching_cost_aggregation_kernel[blocks, threads](cost, mbm_cost_volume)
+    #     return mbm_cost_volume
+    #
+    # aggregated_cost = mbm_cost_aggregation(matching_cost)
 
     # WTA DISPARITY SELECTION
     def select_disparity_wta(cost):
@@ -402,37 +402,37 @@ def main():
         wta_disparity_selection_kernel[blocks, threads](cost, output_disp, min_disparity)
         return output_disp
 
-    downscaled_disparity = select_disparity_wta(aggregated_cost)
+    downscaled_disparity = select_disparity_wta(matching_cost)
 
-    # SECONDARY MATCHING
-    def secondary_matching(left, right, cost, disparity):
-        threads = (16, 16)
-        blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]))
-        secondary_matching_kernel[blocks, threads](left, right, cost, disparity, sad_patch_radius, K)
-        return disparity
-
-    downscaled_disparity = secondary_matching(grayscale_left, grayscale_right, aggregated_cost, downscaled_disparity)
-
-    # UPSCALE DISPARITY KERNEL
-    def upscale_disparity(left, disparity):
-        out_disp = cuda.device_array(shape=(H, W))
-        threads = (16, 16)
-        blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]))
-        upscale_disparity_vertical_fill_kernel[blocks, threads](left, disparity, out_disp, K, threshold)
-        return out_disp
-
-    upscaled_disparity = upscale_disparity(grayscale_left, downscaled_disparity)
-
-    # DISPARITY HORIZONTAL FILL
-    def horizontal_disparity_fill(left, disparity):
-        threads = (16, 16)
-        blocks = (math.ceil(H / threads[0]), math.ceil(W / threads[1]))
-        horizontal_disparity_fill_kernel[blocks, threads](left, disparity, K, threshold)
-        return disparity
-
-    final_disparity = horizontal_disparity_fill(grayscale_left, upscaled_disparity)
-    print(final_disparity.copy_to_host())
-    Image.fromarray(np.round(final_disparity.copy_to_host() * 256).astype(np.uint16)).show()
+    # # SECONDARY MATCHING
+    # def secondary_matching(left, right, cost, disparity):
+    #     threads = (16, 16)
+    #     blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]))
+    #     secondary_matching_kernel[blocks, threads](left, right, cost, disparity, sad_patch_radius, K)
+    #     return disparity
+    #
+    # downscaled_disparity = secondary_matching(grayscale_left, grayscale_right, aggregated_cost, downscaled_disparity)
+    #
+    # # UPSCALE DISPARITY KERNEL
+    # def upscale_disparity(left, disparity):
+    #     out_disp = cuda.device_array(shape=(H, W))
+    #     threads = (16, 16)
+    #     blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]))
+    #     upscale_disparity_vertical_fill_kernel[blocks, threads](left, disparity, out_disp, K, threshold)
+    #     return out_disp
+    #
+    # upscaled_disparity = upscale_disparity(grayscale_left, downscaled_disparity)
+    #
+    # # DISPARITY HORIZONTAL FILL
+    # def horizontal_disparity_fill(left, disparity):
+    #     threads = (16, 16)
+    #     blocks = (math.ceil(H / threads[0]), math.ceil(W / threads[1]))
+    #     horizontal_disparity_fill_kernel[blocks, threads](left, disparity, K, threshold)
+    #     return disparity
+    #
+    # final_disparity = horizontal_disparity_fill(grayscale_left, upscaled_disparity)
+    # print(final_disparity.copy_to_host())
+    Image.fromarray(np.round(downscaled_disparity.copy_to_host() * 256).astype(np.uint16)).show()
 
 
 if __name__ == "__main__":

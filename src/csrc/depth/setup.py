@@ -10,7 +10,8 @@ setup(
             "buffer/device_buffer.cc",
             "../imageops/kernels/rgb_to_grayscale.cu",
             "../imageops/kernels/mean_pool.cu",
-            "kernels/ncc_matching_cost_volume_construction.cu"
+            "kernels/ncc_matching_cost_volume_construction.cu",
+            "kernels/wta_disparity_selection.cu"
         ])
     ],
     cmdclass={
