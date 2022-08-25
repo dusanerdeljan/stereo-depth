@@ -4,7 +4,6 @@ import os.path
 from abc import ABC, abstractmethod
 
 import numpy as np
-import skimage.io
 import torch
 import torchvision.utils
 
