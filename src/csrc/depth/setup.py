@@ -5,7 +5,9 @@ setup(
     name="cuda_depth",
     ext_modules=[
         CUDAExtension("cuda_depth", [
-            "torch_extension_module.cc"
+            "torch_extension_module.cc",
+            "stereo_matching.cc",
+            "buffer/device_buffer.cc"
         ])
     ],
     cmdclass={
