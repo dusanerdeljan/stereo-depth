@@ -22,6 +22,8 @@ private:
 
     void wta_disparity_selection();
 
+    void secondary_matching();
+
     stereo_matching_configuration m_config;
     device_buffer m_buffer;
 };

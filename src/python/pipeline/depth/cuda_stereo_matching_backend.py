@@ -221,7 +221,7 @@ def secondary_matching_kernel(
     if x >= downscaled_disparity.shape[0] or y >= downscaled_disparity.shape[1]:
         return
 
-    d_mbm = downscaled_disparity[x, y]
+    d_mbm =      downscaled_disparity[x, y]
     d_mbm_minus_one = k * (d_mbm - 1)
     d_mbm_plus_one = k * (d_mbm + 1)
 
@@ -404,15 +404,15 @@ def main():
 
     downscaled_disparity = select_disparity_wta(aggregated_cost)
 
-    # # SECONDARY MATCHING
-    # def secondary_matching(left, right, cost, disparity):
-    #     threads = (16, 16)
-    #     blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]))
-    #     secondary_matching_kernel[blocks, threads](left, right, cost, disparity, sad_patch_radius, K)
-    #     return disparity
-    #
-    # downscaled_disparity = secondary_matching(grayscale_left, grayscale_right, aggregated_cost, downscaled_disparity)
-    #
+    # SECONDARY MATCHING
+    def secondary_matching(left, right, cost, disparity):
+        threads = (16, 16)
+        blocks = (math.ceil(dH / threads[0]), math.ceil(dW / threads[1]))
+        secondary_matching_kernel[blocks, threads](left, right, cost, disparity, sad_patch_radius, K)
+        return disparity
+
+    downscaled_disparity = secondary_matching(grayscale_left, grayscale_right, aggregated_cost, downscaled_disparity)
+
     # # UPSCALE DISPARITY KERNEL
     # def upscale_disparity(left, disparity):
     #     out_disp = cuda.device_array(shape=(H, W))
