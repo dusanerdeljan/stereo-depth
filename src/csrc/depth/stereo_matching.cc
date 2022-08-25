@@ -23,7 +23,7 @@ torch::Tensor stereo_matching::compute_disparity_map(torch::Tensor left_image, t
     image_ops::rgb_to_grayscale_inplace(right_image, m_buffer.right_grayscaled);
 
     image_ops::mean_pool_inplace(m_buffer.left_grayscaled, m_buffer.left_downscaled, m_config.downscale_factor);
-    image_ops::mean_pool_inplace(m_buffer.right_grayscaled, m_buffer.left_downscaled, m_config.downscale_factor);
+    image_ops::mean_pool_inplace(m_buffer.right_grayscaled, m_buffer.right_downscaled, m_config.downscale_factor);
 
     ncc_matching_cost_volume_construction();
 
