@@ -20,7 +20,7 @@ namespace device_functions {
     } 
 
     template<typename scalar_t>
-    __device__ __forceinline__ scalar_t quadratic_function_min(
+    __device__ __forceinline__ scalar_t quadratic_function_peak(
         scalar_t x1,
         scalar_t y1,
         scalar_t x2,
@@ -30,15 +30,17 @@ namespace device_functions {
     ) {
         scalar_t denominator = (x1 - x2) * (x2 - x3) * (x1 - x3);
         scalar_t min_value;
-        if (y1 < y2) {
-            min_value = (y1 < y3) ? x1 : x3;
+        if (y1 > y2) {
+            min_value = (y1 > y3) ? x1 : x3;
         } else {
-            min_value = (y2 < y3) ? x2 : x3;
+            min_value = (y2 > y3) ? x2 : x3;
         }
         if (denominator != 0) {
             scalar_t a = x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2);
             scalar_t b = x1*x1 * (y2 - y3) + x3*x3 * (y1 - y2) + x2*x2 * (y3 - y1);
-            min_value = -b / (2 * a);
+            if (a < 0) {
+                min_value = -b / (2 * a);
+            }
         }
         return min_value;
     }

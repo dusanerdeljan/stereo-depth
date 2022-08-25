@@ -8,6 +8,7 @@
 #include "kernels/wta_disparity_selection.hh"
 #include "kernels/secondary_matching.hh"
 #include "kernels/upscale_disparity_vertical_fill.hh"
+#include "kernels/horizontal_disparity_fill.hh"
 
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
@@ -35,6 +36,8 @@ torch::Tensor stereo_matching::compute_disparity_map(torch::Tensor left_image, t
     secondary_matching();
 
     upscale_disparity_vertical_fill();
+
+    horizontal_disparity_fill();
 
     return m_buffer.output_disparity;
 }
@@ -95,6 +98,15 @@ void stereo_matching::upscale_disparity_vertical_fill() {
     upscale_disparity_vertical_fill_cuda(
         m_buffer.left_grayscaled,
         m_buffer.downscaled_disparity,
+        m_buffer.output_disparity,
+        m_config.downscale_factor,
+        m_config.threshold
+    );
+}
+
+void stereo_matching::horizontal_disparity_fill() {
+    horizontal_disparity_fill_cuda(
+        m_buffer.left_grayscaled,
         m_buffer.output_disparity,
         m_config.downscale_factor,
         m_config.threshold

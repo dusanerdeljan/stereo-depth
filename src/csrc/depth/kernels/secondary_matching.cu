@@ -53,12 +53,12 @@ namespace {
         }
 
         if ((d_sad > d_mbm_minus_one) && (d_sad < d_mbm_plus_one)) {
-            scalar_t mbm_quadratic_min = device_functions::quadratic_function_min<scalar_t>(d_mbm, read_mbm_disparity_cost(d_mbm),
-                                                                                            d_mbm + 1, read_mbm_disparity_cost(d_mbm + 1),
-                                                                                            d_mbm - 1, read_mbm_disparity_cost(d_mbm - 1));
-            scalar_t sad_quadratic_min = device_functions::quadratic_function_min<scalar_t>(d_sad, c_sad,
-                                                                                            d_sad + 1, read_sad_disparity_cost(d_sad + 1),
-                                                                                            d_sad - 1, read_sad_disparity_cost(d_sad - 1));
+            scalar_t mbm_quadratic_min = device_functions::quadratic_function_peak<scalar_t>(d_mbm, read_mbm_disparity_cost(d_mbm),
+                                                                                             d_mbm + 1, read_mbm_disparity_cost(d_mbm + 1),
+                                                                                             d_mbm - 1, read_mbm_disparity_cost(d_mbm - 1));
+            scalar_t sad_quadratic_min = device_functions::quadratic_function_peak<scalar_t>(d_sad, c_sad,
+                                                                                             d_sad + 1, read_sad_disparity_cost(d_sad + 1),
+                                                                                             d_sad - 1, read_sad_disparity_cost(d_sad - 1));
 
             scalar_t delta_mbm = mbm_quadratic_min - d_mbm;
             scalar_t delta_sad = sad_quadratic_min - d_sad;

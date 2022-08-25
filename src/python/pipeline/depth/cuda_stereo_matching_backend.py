@@ -298,6 +298,7 @@ def horizontal_disparity_fill_kernel(
         disparity: DeviceNDArray,
         k: int,
         threshold: float
+
 ) -> None:
     x, y = cuda_2d_grid_coordinates()
 

@@ -21,6 +21,7 @@ namespace {
             return;
         }
 
+        /*
         scalar_t cost = 0.0f;
         scalar_t left_sum = 0.0f;
         scalar_t right_sum = 0.0f;
@@ -62,6 +63,16 @@ namespace {
 
         scalar_t denominator = patch_area * left_stdev * right_stdev;
         scalar_t total_cost = denominator != 0 ? (cost / denominator) : 0.0f;
+        */
+        scalar_t total_cost = device_functions::compute_sad_cost_function<scalar_t>(
+            input_left,
+            input_right,
+            x,
+            y,
+            disparity,
+            patch_radius,
+            static_cast<scalar_t>(255)
+        );
         cost_volume[x][y][d] = total_cost;
     }
 };

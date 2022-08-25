@@ -14,7 +14,8 @@ setup(
             "kernels/multi_block_matching_cost_aggregation.cu",
             "kernels/wta_disparity_selection.cu",
             "kernels/secondary_matching.cu",
-            "kernels/upscale_disparity_vertical_fill.cu"
+            "kernels/upscale_disparity_vertical_fill.cu",
+            "kernels/horizontal_disparity_fill.cu"
         ])
     ],
     cmdclass={
