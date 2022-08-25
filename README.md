@@ -15,21 +15,20 @@ GPU accelerated single view passive stereo depth estimation pipeline.
 
 ## Main references
  * Right view synthesis
-    ```
-    Xie, Junyuan, Ross Girshick, and Ali Farhadi. "Deep3d: Fully automatic 2d-to-3d video conversion with deep convolutional neural networks." European conference on computer vision. Springer, Cham, 2016
-    ```
-    ```
-    Luo, Yue, et al. "Single view stereo matching." Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2018.
-    ```
+ 
+   * Xie, Junyuan, Ross Girshick, and Ali Farhadi. "Deep3d: Fully automatic 2d-to-3d video conversion with deep convolutional neural networks." European conference on computer vision. Springer, Cham, 2016
+
+   * Luo, Yue, et al. "Single view stereo matching." Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2018.
+    
  * CUDA stereo matching
-    ```
-    Chang, Qiong, and Tsutomu Maruyama. "Real-time stereo vision system: a multi-block matching on GPU." IEEE Access 6 (2018): 42030-42046.
-    ```
+    
+   * Chang, Qiong, and Tsutomu Maruyama. "Real-time stereo vision system: a multi-block matching on GPU." IEEE Access 6 (2018): 42030-42046.
+   
  * GwC-Net
-    ```
-    Guo, Xiaoyang, et al. "Group-wise correlation stereo network." Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. 2019.
-    ```
+    
+   * Guo, Xiaoyang, et al. "Group-wise correlation stereo network." Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. 2019.
+    
  * MobileStereoNet
-    ```
-    Shamsafar, Faranak, et al. "Mobilestereonet: Towards lightweight deep networks for stereo matching." Proceedings of the ieee/cvf winter conference on applications of computer vision. 2022.
-    ```
+    
+   * Shamsafar, Faranak, et al. "Mobilestereonet: Towards lightweight deep networks for stereo matching." Proceedings of the ieee/cvf winter conference on applications of computer vision. 2022.
+    
