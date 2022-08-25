@@ -7,7 +7,7 @@
 
 right_view_synthesis::right_view_synthesis(uint32_t height, uint32_t width, const std::string& model_path)
     : m_model(torch::jit::load(model_path)),
-      m_output_buffer(torch::zeros({height, width, 3}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA))) {}
+      m_output_buffer(torch::empty({3, height, width}, torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA))) {}
 
 torch::Tensor right_view_synthesis::generate_right_view(torch::Tensor left_full, torch::Tensor left_downscaled) {
     CHECK_INPUT(left_full);

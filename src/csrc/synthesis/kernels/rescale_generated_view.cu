@@ -10,12 +10,12 @@ namespace {
         const uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
         const uint32_t z = threadIdx.z;
 
-        if ((x >= output.size(0)) || (y >= output.size(1))) {
+        if ((x >= output.size(1)) || (y >= output.size(2))) {
             return;
         }
 
         scalar_t value = std::min<scalar_t>(std::max<scalar_t>(input[0][z][x][y] * 255 + 0.5, 0), 255);
-        output[x][y][z] = value;
+        output[z][x][y] = value;
     }
 };
 
