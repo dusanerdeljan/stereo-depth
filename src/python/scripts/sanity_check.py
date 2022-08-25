@@ -16,7 +16,7 @@ def main():
     # print(output.shape)
     # P(output.byte()).show()
     stereo_matching = cuda_depth.StereoMatching()
-    output = stereo_matching.compute_disparity_map(torch_image, torch_image)
+    output = stereo_matching.compute_disparity_map(torch_image.contiguous(), torch_image.contiguous())
     print(output.device)
 
 

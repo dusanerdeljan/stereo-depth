@@ -7,7 +7,9 @@ setup(
         CUDAExtension("cuda_depth", [
             "torch_extension_module.cc",
             "stereo_matching.cc",
-            "buffer/device_buffer.cc"
+            "buffer/device_buffer.cc",
+            "../imageops/kernels/rgb_to_grayscale.cu",
+            "../imageops/kernels/mean_pool.cu"
         ])
     ],
     cmdclass={
