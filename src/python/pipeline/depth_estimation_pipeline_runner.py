@@ -1,7 +1,5 @@
 from typing import List
 
-import torch.cuda
-
 from pipeline import DepthEstimationPipeline, DepthEstimationPipelineConfig
 from pipeline.camera.camera import Camera
 from pipeline.disparity_map_hooks import DisparityMapHook
@@ -20,7 +18,6 @@ def extract_config_from_camera(camera: Camera) -> DepthEstimationPipelineConfig:
 def run_depth_estimation_pipeline(camera: Camera,
                                   pipeline: DepthEstimationPipeline,
                                   hooks: List[DisparityMapHook] = None) -> None:
-    torch.cuda.empty_cache()
     if hooks is None:
         hooks = []
 

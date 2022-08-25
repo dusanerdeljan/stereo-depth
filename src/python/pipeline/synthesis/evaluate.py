@@ -1,16 +1,15 @@
 import torch
-from torch import nn
 import torch.utils.data
+from torch import nn
 from tqdm import tqdm
 
-from helpers.torch_helpers import get_best_available_device
 from helpers.paths import python_project_relative_path, DEEP3D_MODEL_WEIGHTS_PATH
 from pipeline.synthesis.deep3d import Deep3D
 from pipeline.synthesis.kitti_dataset import KittiStereoDataset
 
 
 def evaluate_deep3d_on_kitti_dataset():
-    device = get_best_available_device()
+    device = torch.device("cuda")
     model = Deep3D(device=device).to(device)
     model.load_state_dict(torch.load(DEEP3D_MODEL_WEIGHTS_PATH))
 

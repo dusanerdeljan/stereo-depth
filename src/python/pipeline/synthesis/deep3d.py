@@ -5,8 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 
-from helpers.torch_helpers import get_best_available_device, \
-    initialize_conv2d, get_vgg_conv_blocks, initialize_linear
+from helpers.torch_helpers import initialize_conv2d, get_vgg_conv_blocks, initialize_linear
 
 
 class DeconvBlock(nn.Module):
@@ -214,22 +213,3 @@ class Deep3D(nn.Module):
     @property
     def device(self):
         return self._device
-
-
-def test_model_view_generation():
-    device = get_best_available_device()
-    model = Deep3D(device=device, log_perf_time=True).to(device)
-
-    # CUDA warmup
-    model(torch.randn(1, 3, 384, 1280, dtype=torch.float32, device=device),
-          torch.randn(1, 3, 96, 320, dtype=torch.float32, device=device))
-    torch.cuda.synchronize()
-
-    for _ in range(100):
-        generated_view = model(torch.randn(1, 3, 384, 1280, dtype=torch.float32, device=device),
-                               torch.randn(1, 3, 96, 320, dtype=torch.float32, device=device))
-        print(generated_view.shape)
-
-
-if __name__ == '__main__':
-    test_model_view_generation()

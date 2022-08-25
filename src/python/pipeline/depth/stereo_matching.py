@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 
-import numpy as np
+import torch
 
 
 class StereoMatching(ABC):
 
     @abstractmethod
-    def process(self, left_image: np.ndarray, right_image: np.ndarray) -> np.ndarray:
+    def process(self, left_image: torch.Tensor, right_image: torch.Tensor) -> torch.Tensor:
         pass
 

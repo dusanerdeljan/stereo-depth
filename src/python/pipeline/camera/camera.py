@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Tuple, Iterator, Optional
 
-import numpy as np
+import torch
 
 
 class Camera(ABC):
@@ -23,5 +23,5 @@ class Camera(ABC):
         pass
 
     @abstractmethod
-    def stream_image_pairs(self) -> Iterator[Tuple[np.ndarray, Optional[np.ndarray]]]:
+    def stream_image_pairs(self) -> Iterator[Tuple[torch.Tensor, Optional[torch.Tensor]]]:
         pass

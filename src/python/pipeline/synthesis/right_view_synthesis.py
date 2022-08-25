@@ -1,17 +1,16 @@
+import cuda_synthesis
 import numpy as np
 import torch
-import cuda_synthesis
 
-from helpers.paths import DEEP3D_MODEL_TRACE_PATH
-from helpers.torch_helpers import get_best_available_device
 from helpers.imageio_helpers import to_resized_torch_image, load_cv_rgb_image, resize_image, save_cv_rgb_image
+from helpers.paths import DEEP3D_MODEL_TRACE_PATH
 
 
 class RightViewSynthesis:
     
     def __init__(self):
         super(RightViewSynthesis, self).__init__()
-        self._device = get_best_available_device()
+        self._device = torch.device("cuda")
         self._full_resolution = (384, 1280)
         self._downscaled_resolution = (384 // 4, 1280 // 4)
         self._dnn_inference = cuda_synthesis.RightViewSynthesis(

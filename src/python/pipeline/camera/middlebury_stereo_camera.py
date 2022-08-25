@@ -2,9 +2,9 @@ import os.path
 from dataclasses import dataclass
 from typing import Tuple, Iterator, Optional
 
-import cv2
 import numpy as np
-from PIL import Image
+import torch
+import torchvision.io
 
 from helpers.paths import python_project_relative_path
 from pipeline.camera.camera import Camera
@@ -56,8 +56,8 @@ class MiddleBuryStereoCamera(Camera):
         right_image_path = os.path.join(middlebury_dir, "right.png")
         calibration_file_path = os.path.join(middlebury_dir, "calib.txt")
 
-        self._left_image = np.array(Image.open(left_image_path).convert("RGB"))
-        self._right_image = np.array(Image.open(right_image_path).convert("RGB"))
+        self._left_image = torchvision.io.read_image(left_image_path)
+        self._right_image = torchvision.io.read_image(right_image_path)
         self._calibration = MiddleBuryStereoCamera._load_calibration_file(calibration_file_path)
 
     def focal_length(self) -> float:
@@ -72,7 +72,7 @@ class MiddleBuryStereoCamera(Camera):
     def get_disparity_boundaries(self) -> Tuple[int, int]:
         return self._calibration.vmin, self._calibration.vmax
 
-    def stream_image_pairs(self) -> Iterator[Tuple[np.ndarray, Optional[np.ndarray]]]:
+    def stream_image_pairs(self) -> Iterator[Tuple[torch.Tensor, Optional[torch.Tensor]]]:
         yield self._left_image, self._right_image
 
     @staticmethod

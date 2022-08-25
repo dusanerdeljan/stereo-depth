@@ -70,7 +70,7 @@ void stereo_matching::multi_block_matching_cost_aggregation() {
         m_config.min_disparity / m_config.downscale_factor,
         m_config.max_disparity / m_config.downscale_factor,
         m_config.small_mbm_radius,
-        m_config.small_mbm_radius,
+        m_config.mid_mbm_radius,
         m_config.large_mbm_radius
     );
 }

@@ -28,13 +28,6 @@ def cuda_perf_clock(name: str, do_log: bool = True) -> Generator:
             print(f"{name} took {(end - start) * 1000.0} milliseconds.")
 
 
-def get_best_available_device() -> torch.device:
-    device = "cpu"
-    if torch.cuda.is_available():
-        device = torch.cuda.current_device()
-    return torch.device(device)
-
-
 def initialize_linear(fc: nn.Linear) -> None:
     nn.init.normal_(fc.weight, 0, 0.01)
     nn.init.constant_(fc.bias, 0)

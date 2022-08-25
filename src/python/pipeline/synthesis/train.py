@@ -3,14 +3,14 @@ import os.path
 import torch
 
 from helpers.paths import DEEP3D_MODEL_WEIGHTS_PATH
-from helpers.torch_helpers import get_best_available_device, fix_data_parallel_state_dict
+from helpers.torch_helpers import fix_data_parallel_state_dict
 from pipeline.synthesis.deep3d import Deep3D
 from pipeline.synthesis.kitti_dataset import KittiStereoDataset
 from pipeline.synthesis.trainer import TrainerConfig, Trainer
 
 
 def train_deep3d_on_kitti_dataset(resume: bool = False):
-    device = get_best_available_device()
+    device = torch.device("cuda")
     model = Deep3D(device=device)
     if resume:
         assert os.path.exists(DEEP3D_MODEL_WEIGHTS_PATH), "Cannot resume training since no previous session was found."

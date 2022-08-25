@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import skimage.io
+import torch
+import torchvision.utils
 
 from helpers.paths import python_project_relative_path
 from helpers.point_cloud_helpers import save_point_cloud_from_depth
@@ -14,7 +16,7 @@ from pipeline.camera.camera import Camera
 class DisparityMapHook(ABC):
 
     @abstractmethod
-    def process(self, disparity_map: np.ndarray) -> None:
+    def process(self, disparity_map: torch.Tensor) -> None:
         pass
 
 
@@ -30,10 +32,9 @@ class DisparityMapSaver(DisparityMapHook):
         self._save_dir = python_project_relative_path(save_dir)
         self._frame_index = 0
 
-    def process(self, disparity_map: np.ndarray) -> None:
+    def process(self, disparity_map: torch.Tensor) -> None:
         save_path = os.path.join(self._save_dir, f"disparity_map_{self._frame_index:06d}.png")
-        disparity_map = np.round(disparity_map * 256).astype(np.uint16)
-        skimage.io.imsave(save_path, disparity_map)
+        torchvision.utils.save_image(disparity_map / 256, save_path)
         self._frame_index += 1
         print(f"Saved disparity map: {save_path}...")
 
@@ -51,15 +52,15 @@ class PointCloudSaver(DisparityMapHook):
         self._save_dir = python_project_relative_path(save_dir)
         self._frame_index = 0
 
-    def process(self, disparity_map: np.ndarray) -> None:
+    def process(self, disparity_map: torch.Tensor) -> None:
         save_path = os.path.join(self._save_dir, f"point_cloud_{self._frame_index:06d}.ply")
         depth_map = self._disparity_to_depth(disparity_map)
-        invalid_disparity_mask = np.logical_not(np.equal(disparity_map, self._invalid_disparity))
-        save_point_cloud_from_depth(depth_map, invalid_disparity_mask, save_path)
+        invalid_disparity_mask = torch.logical_not(torch.eq(disparity_map, self._invalid_disparity))
+        save_point_cloud_from_depth(depth_map.cpu(), invalid_disparity_mask.cpu(), save_path)
         self._frame_index += 1
         print(f"Saved point cloud: {save_path}...")
 
-    def _disparity_to_depth(self, disparity_map: np.ndarray) -> np.ndarray:
+    def _disparity_to_depth(self, disparity_map: torch.Tensor) -> torch.Tensor:
         return (self._baseline * self._focal_length) / disparity_map
 
     @staticmethod

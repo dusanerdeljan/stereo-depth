@@ -7,11 +7,6 @@ import torch
 from skimage.transform import resize
 
 
-def save_debug_image(image: np.ndarray, file_path: str) -> None:
-    image = rescale_image_to_uint8_range(image)
-    cv2.imwrite(file_path, image)
-
-
 def rescale_image_to_uint8_range(image: np.ndarray) -> np.ndarray:
     min_val = np.min(image)
     max_val = np.max(image)
@@ -45,12 +40,6 @@ def resize_image(image: np.ndarray, resolution: Tuple[int, int]) -> np.ndarray:
 
 def to_resized_torch_image(image: np.ndarray, resolution: Tuple[int, int]) -> torch.Tensor:
     return chw_ordering(torch.from_numpy(resize_image(image, resolution)))
-
-
-def ensure_grayscale(image: np.ndarray) -> np.ndarray:
-    if image.ndim == 2:
-        return image
-    return cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
 
 def load_cv_rgb_image(image_path: str) -> np.ndarray:

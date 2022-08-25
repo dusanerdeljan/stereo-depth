@@ -1,9 +1,10 @@
 from typing import Iterator, Tuple, Optional
 
-import numpy as np
-from skimage.transform import resize
+import torch
+import torchvision.io
+import torchvision.transforms as T
 
-from helpers.imageio_helpers import load_cv_rgb_image, read_kitti_drive_stereo_pairs
+from helpers.imageio_helpers import read_kitti_drive_stereo_pairs
 from helpers.paths import python_project_relative_path
 from pipeline.camera.camera import Camera
 
@@ -16,6 +17,8 @@ class KittiSingleViewCamera(Camera):
         self._right_images.sort()
         self._return_right_view = return_right_view
         self._only_one = only_one
+        self._pil_to_tensor = T.PILToTensor()
+        self._resize = T.Resize(size=self.get_image_shape())
 
     def focal_length(self) -> float:
         return 1.0
@@ -29,15 +32,12 @@ class KittiSingleViewCamera(Camera):
     def get_disparity_boundaries(self) -> Tuple[int, int]:
         return 1, 64
 
-    def stream_image_pairs(self) -> Iterator[Tuple[np.ndarray, Optional[np.ndarray]]]:
+    def stream_image_pairs(self) -> Iterator[Tuple[torch.Tensor, Optional[torch.Tensor]]]:
         for (left_image, right_image) in zip(self._left_images, self._right_images):
             right_view = self._load_view(right_image) if self._return_right_view else None
             yield self._load_view(left_image), right_view
             if self._only_one:
                 break
 
-    def _load_view(self, path: str) -> np.ndarray:
-        return self._rescale_view(load_cv_rgb_image(path))
-
-    def _rescale_view(self, view: np.ndarray) -> np.ndarray:
-        return np.clip(255 * resize(view, self.get_image_shape()) + 0.5, 0, 255).astype(np.uint8)
+    def _load_view(self, path: str) -> torch.Tensor:
+        return self._resize(torchvision.io.read_image(path))

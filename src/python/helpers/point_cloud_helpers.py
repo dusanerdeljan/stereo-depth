@@ -1,8 +1,8 @@
 import open3d as o3d
-import numpy as np
+import torch
 
 
-def depth_to_o3d_point_cloud(depth: np.ndarray, mask: np.ndarray) -> o3d.geometry.PointCloud:
+def depth_to_o3d_point_cloud(depth: torch.Tensor, mask: torch.Tensor) -> o3d.geometry.PointCloud:
     depth_points = []
     for x in range(depth.shape[0]):
         for y in range(depth.shape[1]):
@@ -13,11 +13,11 @@ def depth_to_o3d_point_cloud(depth: np.ndarray, mask: np.ndarray) -> o3d.geometr
     return pcd
 
 
-def visualize_point_cloud_from_depth(depth: np.ndarray, mask: np.ndarray) -> None:
+def visualize_point_cloud_from_depth(depth: torch.Tensor, mask: torch.Tensor) -> None:
     pcd = depth_to_o3d_point_cloud(depth, mask)
     o3d.visualization.draw_geometries([pcd])
 
 
-def save_point_cloud_from_depth(depth: np.ndarray, mask: np.ndarray, filename: str) -> None:
+def save_point_cloud_from_depth(depth: torch.Tensor, mask: torch.Tensor, filename: str) -> None:
     pcd = depth_to_o3d_point_cloud(depth, mask)
     o3d.io.write_point_cloud(filename, pcd)
