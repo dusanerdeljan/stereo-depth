@@ -5,6 +5,7 @@ import torch
 import cuda_depth
 
 from helpers.paths import python_project_relative_path
+from helpers.torch_helpers import cuda_perf_clock
 from pipeline.depth import StereoMatching, DnnStereoMatchingBackend, CudaStereoMatchingBackend
 from pipeline.synthesis import RightViewSynthesis
 
@@ -28,9 +29,12 @@ class DepthEstimationPipeline:
         print(f"Using '{self._config.stereo_matching_backend}' as stereo matching backend.")
 
     def process(self, left_image: torch.Tensor, right_image: Optional[torch.Tensor] = None) -> torch.Tensor:
-        if right_image is None:
-            right_image = self._right_view_synthesis.process(left_image)
-        disparity_map = self._stereo_matching.process(left_image, right_image)
+        left_image = left_image.cuda()
+        with cuda_perf_clock("Right view generation"):
+            if right_image is None:
+                right_image = self._right_view_synthesis.process(left_image)
+        with cuda_perf_clock("Stereo matching"):
+            disparity_map = self._stereo_matching.process(left_image, right_image)
         return disparity_map
 
     def get_configuration(self) -> DepthEstimationPipelineConfig:
