@@ -18,6 +18,7 @@ def main():
     # P(output.byte()).show()
     stereo_matching = cuda_depth.StereoMatching()
     output = stereo_matching.compute_disparity_map(left_image, right_image)
+    print(output.shape)
     Image.fromarray((output * 256).cpu().numpy().astype(np.uint16)).show()
 
 

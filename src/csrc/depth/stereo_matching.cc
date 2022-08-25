@@ -7,6 +7,7 @@
 #include "kernels/multi_block_matching_cost_aggregation.hh"
 #include "kernels/wta_disparity_selection.hh"
 #include "kernels/secondary_matching.hh"
+#include "kernels/upscale_disparity_vertical_fill.hh"
 
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
@@ -33,7 +34,9 @@ torch::Tensor stereo_matching::compute_disparity_map(torch::Tensor left_image, t
 
     secondary_matching();
 
-    return m_buffer.downscaled_disparity;
+    upscale_disparity_vertical_fill();
+
+    return m_buffer.output_disparity;
 }
 
 void stereo_matching::grayscale(torch::Tensor left_image, torch::Tensor right_image) {
@@ -78,7 +81,6 @@ void stereo_matching::wta_disparity_selection() {
 }
 
 void stereo_matching::secondary_matching() {
-    std::cout << "called secondary matching" << std::endl;
     secondary_matching_cuda(
         m_buffer.left_grayscaled,
         m_buffer.right_grayscaled,
@@ -86,5 +88,15 @@ void stereo_matching::secondary_matching() {
         m_buffer.downscaled_disparity,
         m_config.sad_patch_radius,
         m_config.downscale_factor
+    );
+}
+
+void stereo_matching::upscale_disparity_vertical_fill() {
+    upscale_disparity_vertical_fill_cuda(
+        m_buffer.left_grayscaled,
+        m_buffer.downscaled_disparity,
+        m_buffer.output_disparity,
+        m_config.downscale_factor,
+        m_config.threshold
     );
 }

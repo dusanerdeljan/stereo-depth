@@ -13,7 +13,8 @@ setup(
             "kernels/ncc_matching_cost_volume_construction.cu",
             "kernels/multi_block_matching_cost_aggregation.cu",
             "kernels/wta_disparity_selection.cu",
-            "kernels/secondary_matching.cu"
+            "kernels/secondary_matching.cu",
+            "kernels/upscale_disparity_vertical_fill.cu"
         ])
     ],
     cmdclass={

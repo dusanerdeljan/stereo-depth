@@ -24,6 +24,8 @@ private:
 
     void secondary_matching();
 
+    void upscale_disparity_vertical_fill();
+
     stereo_matching_configuration m_config;
     device_buffer m_buffer;
 };
