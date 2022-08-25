@@ -3,6 +3,8 @@
 #include "../imageops/rgb_to_grayscale.hh"
 #include "../imageops/mean_pool.hh"
 
+#include "kernels/ncc_matching_cost_volume_construction.hh"
+
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
@@ -22,5 +24,19 @@ torch::Tensor stereo_matching::compute_disparity_map(torch::Tensor left_image, t
     image_ops::mean_pool_inplace(m_buffer.left_grayscaled, m_buffer.left_downscaled, m_config.downscale_factor);
     image_ops::mean_pool_inplace(m_buffer.right_grayscaled, m_buffer.left_downscaled, m_config.downscale_factor);
 
+    ncc_matching_cost_volume_construction();
+
     return m_buffer.output_disparity;
+}
+
+void stereo_matching::ncc_matching_cost_volume_construction() {
+    std::cout << "calling ncc_matching_cost_volume_construction_cuda" << std::endl;
+    ncc_matching_cost_volume_construction_cuda(
+        m_buffer.left_downscaled,
+        m_buffer.right_downscaled,
+        m_buffer.matching_cost_volume,
+        m_config.ncc_patch_radius,
+        m_config.min_disparity / m_config.downscale_factor,
+        m_config.max_disparity / m_config.downscale_factor
+    );
 }

@@ -12,6 +12,8 @@ public:
     torch::Tensor compute_disparity_map(torch::Tensor left, torch::Tensor right);
 
 private:
+    void ncc_matching_cost_volume_construction();
+
     stereo_matching_configuration m_config;
     device_buffer m_buffer;
 };

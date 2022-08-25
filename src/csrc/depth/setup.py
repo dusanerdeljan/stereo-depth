@@ -9,7 +9,8 @@ setup(
             "stereo_matching.cc",
             "buffer/device_buffer.cc",
             "../imageops/kernels/rgb_to_grayscale.cu",
-            "../imageops/kernels/mean_pool.cu"
+            "../imageops/kernels/mean_pool.cu",
+            "kernels/ncc_matching_cost_volume_construction.cu"
         ])
     ],
     cmdclass={
