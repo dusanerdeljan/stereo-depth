@@ -18,6 +18,10 @@ class DepthEstimationPipelineHook(ABC):
     def process(self, context: DepthEstimationPipelineContext) -> None:
         pass
 
+    @staticmethod
+    def invoke_in_context(hook: DepthEstimationPipelineHook, context: DepthEstimationPipelineContext) -> None:
+        hook.process(context)
+
 
 class DisparityMapCompletionLogger(DepthEstimationPipelineHook):
 

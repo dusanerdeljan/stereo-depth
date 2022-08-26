@@ -1,4 +1,6 @@
-from typing import List
+from typing import Iterable
+
+from joblib import Parallel, delayed, cpu_count
 
 from pipeline import DepthEstimationPipeline, DepthEstimationPipelineConfig
 from pipeline.camera.camera import Camera
@@ -18,20 +20,23 @@ def extract_config_from_camera(camera: Camera) -> DepthEstimationPipelineConfig:
 
 def run_depth_estimation_pipeline(camera: Camera,
                                   pipeline: DepthEstimationPipeline,
-                                  hooks: List[DepthEstimationPipelineHook] = None) -> None:
+                                  hooks: Iterable[DepthEstimationPipelineHook] = None) -> None:
     if hooks is None:
         hooks = []
 
-    for frame_index, (left_view, right_view) in enumerate(camera.stream_image_pairs()):
-        disparity_map = pipeline.process(left_view, right_view)
+    n_parallel_jobs = min(len(hooks), cpu_count() - 1, 1)
+    with Parallel(n_jobs=n_parallel_jobs) as parallel_thread_pool:
+        for frame_index, (left_view, right_view) in enumerate(camera.stream_image_pairs()):
+            disparity_map = pipeline.process(left_view, right_view)
 
-        pipeline_context = DepthEstimationPipelineContext(
-            disparity_map=disparity_map,
-            left_image=left_view,
-            right_image=right_view,
-            config=pipeline.get_configuration(),
-            frame_index=frame_index
-        )
+            pipeline_context = DepthEstimationPipelineContext(
+                disparity_map=disparity_map,
+                left_image=left_view,
+                right_image=right_view,
+                config=pipeline.get_configuration(),
+                frame_index=frame_index
+            )
 
-        for hook in hooks:
-            hook.process(pipeline_context)
+            parallel_thread_pool(
+                delayed(DepthEstimationPipelineHook.invoke_in_context)(hook, pipeline_context) for hook in hooks
+            )
