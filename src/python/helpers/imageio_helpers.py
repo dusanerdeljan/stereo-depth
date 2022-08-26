@@ -1,5 +1,30 @@
 import os.path
-from typing import Tuple, List
+from typing import Tuple, List, Union
+
+import torch
+import torchvision.utils
+
+
+def normalize_image(image: torch.Tensor) -> torch.Tensor:
+    min_value = torch.min(image)
+    max_value = torch.max(image)
+    return (image - min_value) / (max_value - min_value)
+
+
+def ensure_chw(image: torch.Tensor) -> torch.Tensor:
+    if image.dim() == 3:
+        return image
+    return torch.tile(image.unsqueeze(0), (3, 1, 1))
+
+
+def save_image_grid(images: Union[torch.Tensor, List[torch.Tensor]],
+                    file_path: str,
+                    padding: int = 10,
+                    pad_value: int = 255) -> None:
+    if not isinstance(images, list):
+        images = [images]
+    images = [normalize_image(ensure_chw(image)).cpu() for image in images]
+    torchvision.utils.save_image(images, file_path, padding=padding, pad_value=pad_value)
 
 
 def read_kitti_drive_stereo_pairs(drive_dir: str) -> Tuple[List[str], List[str]]:

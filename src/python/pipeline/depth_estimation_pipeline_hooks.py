@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import os.path
 from abc import ABC, abstractmethod
+from typing import Callable
 
 import torch
 import torchvision.utils
 
+from helpers.imageio_helpers import save_image_grid
 from helpers.paths import python_project_relative_path
 from helpers.point_cloud_helpers import save_point_cloud_from_depth
 from pipeline.camera.camera import Camera
@@ -23,6 +25,15 @@ class DepthEstimationPipelineHook(ABC):
         hook.process(context)
 
 
+class LambdaHook(DepthEstimationPipelineHook):
+
+    def __init__(self, func: Callable[[DepthEstimationPipelineContext], None]):
+        self._func = func
+
+    def process(self, context: DepthEstimationPipelineContext) -> None:
+        self._func(context)
+
+
 class DisparityMapCompletionLogger(DepthEstimationPipelineHook):
 
     def process(self, context: DepthEstimationPipelineContext) -> None:
@@ -36,8 +47,17 @@ class DisparityMapSaver(DepthEstimationPipelineHook):
 
     def process(self, context: DepthEstimationPipelineContext) -> None:
         save_path = os.path.join(self._save_dir, f"disparity_map_{context.frame_index:06d}.png")
-        torchvision.utils.save_image(context.disparity_map / 256, save_path)
-        print(f"Saved disparity map: {save_path}...")
+        save_image_grid(context.disparity_map, save_path)
+
+
+class ContextFrameSaver(DepthEstimationPipelineHook):
+
+    def __init__(self, save_dir: str):
+        self._save_dir = python_project_relative_path(save_dir)
+
+    def process(self, context: DepthEstimationPipelineContext) -> None:
+        save_path = os.path.join(self._save_dir, f"context_frame_{context.frame_index:06d}.png")
+        save_image_grid([context.left_image, context.right_image, context.disparity_map], save_path)
 
 
 class PointCloudSaver(DepthEstimationPipelineHook):

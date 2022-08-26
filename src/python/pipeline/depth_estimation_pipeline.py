@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Literal, Tuple, Optional
+from typing import Literal, Tuple, Optional, Any
 
 import torch
 import cuda_depth
@@ -18,6 +20,13 @@ class DepthEstimationPipelineConfig:
     invalid_disparity: float = -1.0
     dnn_stereo_matching_path = python_project_relative_path("data/traced/traced_MSNet3D.pt")
     stereo_matching_backend: Literal["dnn", "cuda"] = "cuda"
+
+    def update(self, **kwargs: Any) -> DepthEstimationPipelineConfig:
+        for (key, value) in kwargs.items():
+            if not hasattr(self, key):
+                raise RuntimeError(f"Unexpected keyword argument: '{key}'.")
+            setattr(self, key, value)
+        return self
 
 
 @dataclass
