@@ -6,7 +6,6 @@ import numpy as np
 import torch
 import torchvision.io
 
-from helpers.paths import python_project_relative_path
 from pipeline.camera.camera import Camera
 
 
@@ -48,12 +47,12 @@ class MiddleBuryStereoCameraCalibration:
 class MiddleBuryStereoCamera(Camera):
 
     def __init__(self, middlebury_dir: str) -> None:
-        middlebury_dir = python_project_relative_path(middlebury_dir)
+        middlebury_dir = middlebury_dir
         if not os.path.exists(middlebury_dir):
             raise RuntimeError(f"Directory '{middlebury_dir}' not found.")
 
-        left_image_path = os.path.join(middlebury_dir, "left.png")
-        right_image_path = os.path.join(middlebury_dir, "right.png")
+        left_image_path = os.path.join(middlebury_dir, "im0.png")
+        right_image_path = os.path.join(middlebury_dir, "im1.png")
         calibration_file_path = os.path.join(middlebury_dir, "calib.txt")
 
         self._left_image = torchvision.io.read_image(left_image_path)

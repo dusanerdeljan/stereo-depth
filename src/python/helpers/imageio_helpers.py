@@ -6,9 +6,7 @@ import torchvision.utils
 
 
 def normalize_image(image: torch.Tensor) -> torch.Tensor:
-    min_value = torch.min(image)
-    max_value = torch.max(image)
-    return (image - min_value) / (max_value - min_value)
+    return image / 256
 
 
 def ensure_chw(image: torch.Tensor) -> torch.Tensor:
@@ -23,7 +21,7 @@ def save_image_grid(images: Union[torch.Tensor, List[torch.Tensor]],
                     pad_value: int = 255) -> None:
     if not isinstance(images, list):
         images = [images]
-    images = [normalize_image(ensure_chw(image)).cpu() for image in images]
+    images = [ensure_chw(normalize_image(image)).cpu() for image in images]
     torchvision.utils.save_image(images, file_path, padding=padding, pad_value=pad_value)
 
 

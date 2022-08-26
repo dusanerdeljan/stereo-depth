@@ -44,6 +44,7 @@ class DisparityMapSaver(DepthEstimationPipelineHook):
 
     def __init__(self, save_dir: str):
         self._save_dir = python_project_relative_path(save_dir)
+        os.makedirs(self._save_dir, exist_ok=True)
 
     def process(self, context: DepthEstimationPipelineContext) -> None:
         save_path = os.path.join(self._save_dir, f"disparity_map_{context.frame_index:06d}.png")
@@ -54,6 +55,7 @@ class ContextFrameSaver(DepthEstimationPipelineHook):
 
     def __init__(self, save_dir: str):
         self._save_dir = python_project_relative_path(save_dir)
+        os.makedirs(self._save_dir, exist_ok=True)
 
     def process(self, context: DepthEstimationPipelineContext) -> None:
         save_path = os.path.join(self._save_dir, f"context_frame_{context.frame_index:06d}.png")
