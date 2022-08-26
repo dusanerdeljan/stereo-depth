@@ -20,6 +20,15 @@ class DepthEstimationPipelineConfig:
     stereo_matching_backend: Literal["dnn", "cuda"] = "cuda"
 
 
+@dataclass
+class DepthEstimationPipelineContext:
+    disparity_map: torch.Tensor
+    left_image: torch.Tensor
+    right_image: torch.Tensor
+    config: DepthEstimationPipelineConfig
+    frame_index: int
+
+
 class DepthEstimationPipeline:
     
     def __init__(self, config: DepthEstimationPipelineConfig = DepthEstimationPipelineConfig()) -> None:

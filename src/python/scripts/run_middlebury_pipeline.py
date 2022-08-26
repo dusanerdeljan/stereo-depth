@@ -1,7 +1,7 @@
 from pipeline.camera import MiddleBuryStereoCamera
 from pipeline.depth_estimation_pipeline import DepthEstimationPipeline
 from pipeline.depth_estimation_pipeline_runner import run_depth_estimation_pipeline, extract_config_from_camera
-from pipeline.disparity_map_hooks import DisparityMapSaver, PointCloudSaver
+from pipeline.depth_estimation_pipeline_hooks import DisparityMapSaver, PointCloudSaver
 
 if __name__ == "__main__":
     camera = MiddleBuryStereoCamera(

@@ -3,42 +3,40 @@ from __future__ import annotations
 import os.path
 from abc import ABC, abstractmethod
 
-import numpy as np
 import torch
 import torchvision.utils
 
 from helpers.paths import python_project_relative_path
 from helpers.point_cloud_helpers import save_point_cloud_from_depth
 from pipeline.camera.camera import Camera
+from pipeline.depth_estimation_pipeline import DepthEstimationPipelineContext
 
 
-class DisparityMapHook(ABC):
+class DepthEstimationPipelineHook(ABC):
 
     @abstractmethod
-    def process(self, disparity_map: torch.Tensor) -> None:
+    def process(self, context: DepthEstimationPipelineContext) -> None:
         pass
 
 
-class DisparityMapCompletionLogger(DisparityMapHook):
+class DisparityMapCompletionLogger(DepthEstimationPipelineHook):
 
-    def process(self, disparity_map: np.ndarray) -> None:
-        print(f"Computed disparity map: {disparity_map.shape}...")
+    def process(self, context: DepthEstimationPipelineContext) -> None:
+        print(f"Computed disparity map: {context.disparity_map.shape}...")
 
 
-class DisparityMapSaver(DisparityMapHook):
+class DisparityMapSaver(DepthEstimationPipelineHook):
 
     def __init__(self, save_dir: str):
         self._save_dir = python_project_relative_path(save_dir)
-        self._frame_index = 0
 
-    def process(self, disparity_map: torch.Tensor) -> None:
-        save_path = os.path.join(self._save_dir, f"disparity_map_{self._frame_index:06d}.png")
-        torchvision.utils.save_image(disparity_map / 256, save_path)
-        self._frame_index += 1
+    def process(self, context: DepthEstimationPipelineContext) -> None:
+        save_path = os.path.join(self._save_dir, f"disparity_map_{context.frame_index:06d}.png")
+        torchvision.utils.save_image(context.disparity_map / 256, save_path)
         print(f"Saved disparity map: {save_path}...")
 
 
-class PointCloudSaver(DisparityMapHook):
+class PointCloudSaver(DepthEstimationPipelineHook):
 
     def __init__(self,
                  focal_length: float,
@@ -49,14 +47,12 @@ class PointCloudSaver(DisparityMapHook):
         self._baseline = baseline
         self._invalid_disparity = invalid_disparity
         self._save_dir = python_project_relative_path(save_dir)
-        self._frame_index = 0
 
-    def process(self, disparity_map: torch.Tensor) -> None:
-        save_path = os.path.join(self._save_dir, f"point_cloud_{self._frame_index:06d}.ply")
-        depth_map = self._disparity_to_depth(disparity_map)
-        invalid_disparity_mask = torch.logical_not(torch.eq(disparity_map, self._invalid_disparity))
+    def process(self, context: DepthEstimationPipelineContext) -> None:
+        save_path = os.path.join(self._save_dir, f"point_cloud_{context.frame_index:06d}.ply")
+        depth_map = self._disparity_to_depth(context.disparity_map)
+        invalid_disparity_mask = torch.logical_not(torch.eq(context.disparity_map, self._invalid_disparity))
         save_point_cloud_from_depth(depth_map.cpu(), invalid_disparity_mask.cpu(), save_path)
-        self._frame_index += 1
         print(f"Saved point cloud: {save_path}...")
 
     def _disparity_to_depth(self, disparity_map: torch.Tensor) -> torch.Tensor:
