@@ -18,7 +18,7 @@ class DepthEstimationPipelineConfig:
     min_disparity: int = 1
     max_disparity: int = 64
     invalid_disparity: float = -1.0
-    dnn_stereo_matching_path = python_project_relative_path("data/traced/traced_MSNet3D.pt")
+    dnn_stereo_matching_path = python_project_relative_path("data/traced/traced_MSNet2D.pt")
     stereo_matching_backend: Literal["dnn", "cuda"] = "cuda"
 
     def update(self, **kwargs: Any) -> DepthEstimationPipelineConfig:
@@ -53,7 +53,7 @@ class DepthEstimationPipeline:
                 right_image = self._right_view_synthesis.process(left_image)
         with cuda_perf_clock("Stereo matching"):
             disparity_map = self._stereo_matching.process(left_image, right_image)
-        return disparity_map
+        return disparity_map, (left_image, right_image)
 
     def get_configuration(self) -> DepthEstimationPipelineConfig:
         return self._config

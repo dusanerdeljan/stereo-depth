@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from typing import Callable
 
 import torch
-import torchvision.utils
 
 from helpers.imageio_helpers import save_image_grid
 from helpers.paths import python_project_relative_path

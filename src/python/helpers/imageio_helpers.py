@@ -6,7 +6,7 @@ import torchvision.utils
 
 
 def normalize_image(image: torch.Tensor) -> torch.Tensor:
-    return image / 256
+    return image / torch.max(image)
 
 
 def ensure_chw(image: torch.Tensor) -> torch.Tensor:

@@ -27,12 +27,12 @@ def run_depth_estimation_pipeline(camera: Camera,
     n_parallel_jobs = min(len(hooks), cpu_count() - 1, 1)
     with Parallel(n_jobs=n_parallel_jobs) as parallel_thread_pool:
         for frame_index, (left_view, right_view) in enumerate(camera.stream_image_pairs()):
-            disparity_map = pipeline.process(left_view, right_view)
+            disparity_map, (left_image, right_image) = pipeline.process(left_view, right_view)
 
             pipeline_context = DepthEstimationPipelineContext(
                 disparity_map=disparity_map,
-                left_image=left_view,
-                right_image=right_view,
+                left_image=left_image,
+                right_image=right_image,
                 config=pipeline.get_configuration(),
                 frame_index=frame_index
             )
