@@ -3,12 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Tuple, Optional, Any
 
-import torch
 import cuda_depth
+import torch
 
-from helpers.paths import python_project_relative_path
 from helpers.torch_helpers import cuda_perf_clock
-from pipeline.depth import StereoMatching, DnnStereoMatchingBackend, CudaStereoMatchingBackend
+from pipeline.depth import StereoMatching, DnnStereoMatchingBackend, CudaStereoMatchingBackend, AVAILABLE_DNN_BACKENDS
 from pipeline.synthesis import RightViewSynthesis
 
 
@@ -18,8 +17,7 @@ class DepthEstimationPipelineConfig:
     min_disparity: int = 1
     max_disparity: int = 64
     invalid_disparity: float = -1.0
-    dnn_stereo_matching_path = python_project_relative_path("data/traced/traced_MSNet2D.pt")
-    stereo_matching_backend: Literal["dnn", "cuda"] = "cuda"
+    stereo_matching_backend: Literal["msnet2d", "msnet3d", "gwcnet", "cuda"] = "cuda"
 
     def update(self, **kwargs: Any) -> DepthEstimationPipelineConfig:
         for (key, value) in kwargs.items():
@@ -59,9 +57,9 @@ class DepthEstimationPipeline:
         return self._config
 
     def _get_stereo_matching(self) -> StereoMatching:
-        if self._config.stereo_matching_backend == "dnn":
+        if self._config.stereo_matching_backend in AVAILABLE_DNN_BACKENDS:
             stereo_matching = DnnStereoMatchingBackend(
-                traced_model_path=self._config.dnn_stereo_matching_path
+                traced_model=self._config.stereo_matching_backend
             )
             return stereo_matching
         elif self._config.stereo_matching_backend == "cuda":

@@ -1,3 +1,3 @@
 from pipeline.depth.stereo_matching import StereoMatching
-from pipeline.depth.dnn_stereo_matching_backend import DnnStereoMatchingBackend
+from pipeline.depth.dnn_stereo_matching_backend import DnnStereoMatchingBackend, AVAILABLE_DNN_BACKENDS
 from pipeline.depth.cuda_stereo_matching_backend import CudaStereoMatchingBackend
