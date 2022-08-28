@@ -32,7 +32,7 @@ class RightViewSynthesis:
         return generated_right_view
 
     @torch.no_grad()
-    def _cuda_warmup(self):
+    def _cuda_warmup(self) -> None:
         self._dnn_inference.generate_right_view(
             torch.randn(3, *self._full_resolution, dtype=torch.float32, device=self._device),
             torch.randn(3, *self._downscaled_resolution, dtype=torch.float32, device=self._device)
@@ -40,7 +40,7 @@ class RightViewSynthesis:
         torch.cuda.synchronize()
 
 
-def test_right_view_synthesis():
+def test_right_view_synthesis() -> None:
     right_view_synthesis = RightViewSynthesis()
     left_view = torchvision.io.read_image("../../data/train/2011_09_26/2011_09_26_drive_0011_sync/image_02/data"
                                           "/0000000000.png")

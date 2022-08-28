@@ -7,7 +7,7 @@ from typing import Callable
 import torch
 
 from helpers.imageio_helpers import save_image_grid
-from helpers.paths import python_project_relative_path
+from helpers.paths import timestamp_folder_name
 from helpers.point_cloud_helpers import save_point_cloud_from_depth
 from pipeline.camera.camera import Camera
 from pipeline.depth_estimation_pipeline import DepthEstimationPipelineContext
@@ -42,7 +42,7 @@ class DisparityMapCompletionLogger(DepthEstimationPipelineHook):
 class DisparityMapSaver(DepthEstimationPipelineHook):
 
     def __init__(self, save_dir: str):
-        self._save_dir = python_project_relative_path(save_dir)
+        self._save_dir = os.path.join(save_dir, timestamp_folder_name())
         os.makedirs(self._save_dir, exist_ok=True)
 
     def process(self, context: DepthEstimationPipelineContext) -> None:
@@ -53,7 +53,7 @@ class DisparityMapSaver(DepthEstimationPipelineHook):
 class ContextFrameSaver(DepthEstimationPipelineHook):
 
     def __init__(self, save_dir: str):
-        self._save_dir = python_project_relative_path(save_dir)
+        self._save_dir = os.path.join(save_dir, timestamp_folder_name())
         os.makedirs(self._save_dir, exist_ok=True)
 
     def process(self, context: DepthEstimationPipelineContext) -> None:
@@ -71,7 +71,7 @@ class PointCloudSaver(DepthEstimationPipelineHook):
         self._focal_length = focal_length
         self._baseline = baseline
         self._invalid_disparity = invalid_disparity
-        self._save_dir = python_project_relative_path(save_dir)
+        self._save_dir = os.path.join(save_dir, timestamp_folder_name())
 
     def process(self, context: DepthEstimationPipelineContext) -> None:
         save_path = os.path.join(self._save_dir, f"point_cloud_{context.frame_index:06d}.ply")

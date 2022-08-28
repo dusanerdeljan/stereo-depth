@@ -63,7 +63,7 @@ void multi_block_matching_cost_aggregation_cuda(
     int32_t mid_radius,
     int32_t large_radius
 ) {
-    const dim3 threads_per_block(16, 16, 1);
+    const dim3 threads_per_block(8, 8, 1);
     const dim3 num_blocks(
         (cost_volume.size(0) + threads_per_block.x - 1) / threads_per_block.x,
         (cost_volume.size(1) + threads_per_block.y - 1) / threads_per_block.y,

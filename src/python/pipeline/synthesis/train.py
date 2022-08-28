@@ -9,7 +9,7 @@ from pipeline.synthesis.kitti_dataset import KittiStereoDataset
 from pipeline.synthesis.trainer import TrainerConfig, Trainer
 
 
-def train_deep3d_on_kitti_dataset(resume: bool = False):
+def train_deep3d_on_kitti_dataset(resume: bool = False) -> None:
     device = torch.device("cuda")
     model = Deep3D(device=device)
     if resume:

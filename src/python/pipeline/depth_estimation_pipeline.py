@@ -40,7 +40,7 @@ class DepthEstimationPipelineContext:
 
 class DepthEstimationPipeline:
     
-    def __init__(self, config: DepthEstimationPipelineConfig = DepthEstimationPipelineConfig()) -> None:
+    def __init__(self, config: DepthEstimationPipelineConfig = DepthEstimationPipelineConfig()):
         self._config = config
         self._right_view_synthesis = RightViewSynthesis()
         self._stereo_matching = self._get_stereo_matching()

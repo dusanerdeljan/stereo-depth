@@ -80,7 +80,7 @@ void secondary_matching_cuda(
     int32_t patch_radius,
     int32_t k
 ) {
-    const dim3 threads_per_block(16, 16);
+    const dim3 threads_per_block(8, 8);
     const dim3 num_blocks(
         (cost_volume.size(0) + threads_per_block.x - 1) / threads_per_block.x,
         (cost_volume.size(1) + threads_per_block.y - 1) / threads_per_block.y

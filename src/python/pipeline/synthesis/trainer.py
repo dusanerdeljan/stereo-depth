@@ -35,7 +35,7 @@ class Trainer:
             self._device = torch.cuda.current_device()
             self._model = torch.nn.DataParallel(self._model).to(self._device)
 
-    def save_checkpoint(self, epoch: int, model_dict: dict, optimizer_dict: dict):
+    def save_checkpoint(self, epoch: int, model_dict: dict, optimizer_dict: dict) -> None:
         if self._config.save_path:
             torch.save({
                 "epoch": epoch + 1,
@@ -43,7 +43,7 @@ class Trainer:
                 "optimizer_state_dict": optimizer_dict,
             }, self._config.save_path)
 
-    def train(self):
+    def train(self) -> None:
         train_loader = torch.utils.data.DataLoader(self._train_data, batch_size=self._config.batch_size, shuffle=True)
 
         criterion = nn.L1Loss()

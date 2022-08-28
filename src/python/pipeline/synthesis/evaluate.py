@@ -8,7 +8,7 @@ from pipeline.synthesis.deep3d import Deep3D
 from pipeline.synthesis.kitti_dataset import KittiStereoDataset
 
 
-def evaluate_deep3d_on_kitti_dataset():
+def evaluate_deep3d_on_kitti_dataset() -> None:
     device = torch.device("cuda")
     model = Deep3D(device=device).to(device)
     model.load_state_dict(torch.load(DEEP3D_MODEL_WEIGHTS_PATH))

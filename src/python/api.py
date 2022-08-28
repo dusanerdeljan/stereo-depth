@@ -23,9 +23,9 @@ async def upload_file_to_pipeline_image(upload_file: UploadFile) -> torch.Tensor
 
 
 @router.post("/")
-async def run_pipeline(left_view: UploadFile = File(...)):
+async def run_pipeline(left_view: UploadFile = File(...)) -> StreamingResponse:
     left_image = await upload_file_to_pipeline_image(left_view)
-    output_disparity = depth_estimation_pipeline.process(left_image, None).unsqueeze(0).cpu().byte()
+    output_disparity, _ = depth_estimation_pipeline.process(left_image, None).unsqueeze(0).cpu().byte()
     encoded_png = torchvision.io.encode_png(output_disparity)
     return StreamingResponse(io.BytesIO(bytes(encoded_png)), media_type="image/png")
 

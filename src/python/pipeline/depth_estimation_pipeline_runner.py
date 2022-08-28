@@ -18,11 +18,19 @@ def extract_config_from_camera(camera: Camera) -> DepthEstimationPipelineConfig:
     return config
 
 
+def validate_pipeline_config_wrt_camera(config: DepthEstimationPipelineConfig, camera: Camera) -> None:
+    if camera.get_image_shape() != config.image_shape:
+        raise RuntimeError(f"Incompatible image shapes between pipeline configuration and camera."
+                           f"Pipeline expects: {config.image_shape} but camera provides: {camera.get_image_shape()}.")
+
+
 def run_depth_estimation_pipeline(camera: Camera,
                                   pipeline: DepthEstimationPipeline,
                                   hooks: Iterable[DepthEstimationPipelineHook] = None) -> None:
     if hooks is None:
         hooks = []
+
+    validate_pipeline_config_wrt_camera(pipeline.get_configuration(), camera)
 
     n_parallel_jobs = min(len(hooks), cpu_count() - 1, 1)
     with Parallel(n_jobs=n_parallel_jobs) as parallel_thread_pool:

@@ -46,8 +46,7 @@ class MiddleBuryStereoCameraCalibration:
 
 class MiddleBuryStereoCamera(Camera):
 
-    def __init__(self, middlebury_dir: str) -> None:
-        middlebury_dir = middlebury_dir
+    def __init__(self, middlebury_dir: str):
         if not os.path.exists(middlebury_dir):
             raise RuntimeError(f"Directory '{middlebury_dir}' not found.")
 
