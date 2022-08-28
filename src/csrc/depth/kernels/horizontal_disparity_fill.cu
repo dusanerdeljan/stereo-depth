@@ -47,7 +47,7 @@ void horizontal_disparity_fill_cuda(
     int32_t k,
     int32_t threshold
 ) {
-    const dim3 threads_per_block(16, 16);
+    const dim3 threads_per_block(8, 16);
     const dim3 num_blocks(
         (upscaled_disparity.size(0) + threads_per_block.x - 1) / threads_per_block.x,
         (upscaled_disparity.size(1) + threads_per_block.y - 1) / threads_per_block.y

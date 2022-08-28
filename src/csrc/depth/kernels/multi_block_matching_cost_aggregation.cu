@@ -19,12 +19,20 @@ namespace {
             return;
         }
 
+        const auto pad_x = [&](int32_t x) -> int32_t {
+            return device_functions::pad_index(x, cost_volume.size(0));
+        };
+
+        const auto pad_y = [&](int32_t y) -> int32_t {
+            return device_functions::pad_index(y, cost_volume.size(1));
+        };
+
         // Horizontal line block cost
         scalar_t horizontal_cost = 0.0f;
         for (int32_t i = -small_radius; i <= small_radius; i++) {
             for (int32_t j = -large_radius; j <= large_radius; j++) {
-                int32_t x_index = device_functions::pad_index(x + i, cost_volume.size(0));
-                int32_t y_index = device_functions::pad_index(y + j, cost_volume.size(1));
+                int32_t x_index = pad_x(x + i);
+                int32_t y_index = pad_y(y + j);
                 horizontal_cost += cost_volume[x_index][y_index][d];
             }
         }
@@ -33,8 +41,8 @@ namespace {
         scalar_t vertical_cost = 0.0f;
         for (int32_t i = -large_radius; i <= large_radius; i++) {
             for (int32_t j = -small_radius; j <= small_radius; j++) {
-                int32_t x_index = device_functions::pad_index(x + i, cost_volume.size(0));
-                int32_t y_index = device_functions::pad_index(y + j, cost_volume.size(1));
+                int32_t x_index = pad_x(x + i);
+                int32_t y_index = pad_y(y + j);
                 vertical_cost += cost_volume[x_index][y_index][d];
             }
         }
@@ -43,8 +51,8 @@ namespace {
         scalar_t cross_cost = 0.0f;
         for (int32_t i = -mid_radius; i <= mid_radius; i++) {
             for (int32_t j = -mid_radius; j <= mid_radius; j++) {
-                int32_t x_index = device_functions::pad_index(x + i, cost_volume.size(0));
-                int32_t y_index = device_functions::pad_index(y + j, cost_volume.size(1));
+                int32_t x_index = pad_x(x + i);
+                int32_t y_index = pad_y(y + j);
                 cross_cost += cost_volume[x_index][y_index][d];
             }
         }
@@ -63,7 +71,7 @@ void multi_block_matching_cost_aggregation_cuda(
     int32_t mid_radius,
     int32_t large_radius
 ) {
-    const dim3 threads_per_block(8, 8, 1);
+    const dim3 threads_per_block(4, 8, 1);
     const dim3 num_blocks(
         (cost_volume.size(0) + threads_per_block.x - 1) / threads_per_block.x,
         (cost_volume.size(1) + threads_per_block.y - 1) / threads_per_block.y,

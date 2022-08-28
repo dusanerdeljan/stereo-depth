@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Tuple, Optional, Any
 
-import cuda_depth
 import torch
+import cuda_depth
 
 from helpers.torch_helpers import cuda_perf_clock
 from pipeline.depth import StereoMatching, DnnStereoMatchingBackend, CudaStereoMatchingBackend, AVAILABLE_DNN_BACKENDS

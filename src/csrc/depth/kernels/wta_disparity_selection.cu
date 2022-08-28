@@ -36,7 +36,7 @@ void wta_disparity_selection_cuda(
     torch::Tensor downscaled_disparity,
     int32_t min_disparity
 ) {
-    const dim3 threads_per_block(8, 8);
+    const dim3 threads_per_block(4, 8);
     const dim3 num_blocks(
         (cost_volume.size(0) + threads_per_block.x - 1) / threads_per_block.x,
         (cost_volume.size(1) + threads_per_block.y - 1) / threads_per_block.y
