@@ -9,7 +9,9 @@ namespace {
         torch::PackedTensorAccessor<scalar_t, 3, torch::RestrictPtrTraits, size_t> block_cost_volume,
         int32_t small_radius,
         int32_t mid_radius,
-        int32_t large_radius
+        int32_t large_radius,
+        uint32_t shared_height,
+        uint32_t shared_width
     ) {
         const uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
         const uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -26,18 +28,16 @@ namespace {
         const auto pad_y = [&](int32_t y) -> int32_t {
             return device_functions::pad_index(y, cost_volume.size(1));
         };
-
-        // TODO: Refactor this as dynamic (extern) shared memory allocation
-        const uint32_t shared_height = (24 + 4 - 1);
-        const uint32_t shared_width = (28 + 8 - 1);
         
-        const int32_t start_x = blockDim.x * blockIdx.x - 10;
-        const int32_t start_y = blockDim.y * blockIdx.y - 10;
+        const int32_t start_x = blockDim.x * blockIdx.x - large_radius;
+        const int32_t start_y = blockDim.y * blockIdx.y - large_radius;
         
-        __shared__ scalar_t shared_mem[shared_height * shared_width];
+        // https://stackoverflow.com/a/27570775
+        extern __shared__ __align__(sizeof(scalar_t)) unsigned char raw_shared_mem_buffer[];
+        scalar_t* shared_mem = reinterpret_cast<scalar_t*>(raw_shared_mem_buffer);
         
-        const uint32_t read_per_x = shared_height / 4;
-        const uint32_t read_per_y = shared_width / 8;
+        const uint32_t read_per_x = shared_height / blockDim.x;
+        const uint32_t read_per_y = shared_width / blockDim.y;
 
         for (uint32_t i = 0; i < read_per_x; i++) {
             for (uint32_t j = 0; j < read_per_y; j++) {
@@ -51,8 +51,8 @@ namespace {
         __syncthreads();
 
         // Remap x, y to shared memory index space
-        const int32_t x_remap = 10 + threadIdx.x;
-        const int32_t y_remap = 10 + threadIdx.y;
+        const int32_t x_remap = large_radius + threadIdx.x;
+        const int32_t y_remap = large_radius + threadIdx.y;
 
         // Horizontal line block cost
         scalar_t horizontal_cost = 0.0f;
@@ -105,13 +105,18 @@ void multi_block_matching_cost_aggregation_cuda(
         max_disparity - min_disparity + 1
     );
 
+    const uint32_t shared_height = (3 * threads_per_block.x + 2 * large_radius - 1);
+    const uint32_t shared_width = (3 * threads_per_block.y + 2 * large_radius - 1);
+
     AT_DISPATCH_FLOATING_TYPES(cost_volume.type(), "multi_block_matching_cost_aggregation_cuda", ([&] {
-        multi_block_matching_cost_aggregation_kernel<scalar_t><<<num_blocks, threads_per_block>>>(
+        multi_block_matching_cost_aggregation_kernel<scalar_t><<<num_blocks, threads_per_block, shared_height * shared_width * sizeof(scalar_t)>>>(
             cost_volume.packed_accessor<scalar_t, 3, torch::RestrictPtrTraits, size_t>(),
             block_cost_volume.packed_accessor<scalar_t, 3, torch::RestrictPtrTraits, size_t>(),
             small_radius,
             mid_radius,
-            large_radius
+            large_radius,
+            shared_height,
+            shared_width
         );
     }));
 }
