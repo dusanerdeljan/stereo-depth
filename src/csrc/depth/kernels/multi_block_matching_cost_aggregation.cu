@@ -27,13 +27,40 @@ namespace {
             return device_functions::pad_index(y, cost_volume.size(1));
         };
 
+        // TODO: Refactor this as dynamic (extern) shared memory allocation
+        const uint32_t shared_height = (24 + 4 - 1);
+        const uint32_t shared_width = (28 + 8 - 1);
+        
+        const int32_t start_x = blockDim.x * blockIdx.x - 10;
+        const int32_t start_y = blockDim.y * blockIdx.y - 10;
+        
+        __shared__ scalar_t shared_mem[shared_height * shared_width];
+        
+        const uint32_t read_per_x = shared_height / 4;
+        const uint32_t read_per_y = shared_width / 8;
+
+        for (uint32_t i = 0; i < read_per_x; i++) {
+            for (uint32_t j = 0; j < read_per_y; j++) {
+                const int32_t x_index = pad_x(start_x + threadIdx.x * read_per_x + i);
+                const int32_t y_index = pad_y(start_y + threadIdx.y * read_per_y + j);
+
+                shared_mem[threadIdx.y * read_per_y + j + (threadIdx.x * read_per_x + i) * shared_width] = cost_volume[x_index][y_index][d];
+            }
+        }
+
+        __syncthreads();
+
+        // Remap x, y to shared memory index space
+        const int32_t x_remap = 10 + threadIdx.x;
+        const int32_t y_remap = 10 + threadIdx.y;
+
         // Horizontal line block cost
         scalar_t horizontal_cost = 0.0f;
         for (int32_t i = -small_radius; i <= small_radius; i++) {
             for (int32_t j = -large_radius; j <= large_radius; j++) {
-                int32_t x_index = pad_x(x + i);
-                int32_t y_index = pad_y(y + j);
-                horizontal_cost += cost_volume[x_index][y_index][d];
+                int32_t x_index = x_remap + i;
+                int32_t y_index = y_remap + j;
+                horizontal_cost += shared_mem[y_index + x_index * shared_width];
             }
         }
 
@@ -41,9 +68,9 @@ namespace {
         scalar_t vertical_cost = 0.0f;
         for (int32_t i = -large_radius; i <= large_radius; i++) {
             for (int32_t j = -small_radius; j <= small_radius; j++) {
-                int32_t x_index = pad_x(x + i);
-                int32_t y_index = pad_y(y + j);
-                vertical_cost += cost_volume[x_index][y_index][d];
+                int32_t x_index = x_remap + i;
+                int32_t y_index = y_remap + j;
+                vertical_cost += shared_mem[y_index + x_index * shared_width];
             }
         }
 
@@ -51,9 +78,9 @@ namespace {
         scalar_t cross_cost = 0.0f;
         for (int32_t i = -mid_radius; i <= mid_radius; i++) {
             for (int32_t j = -mid_radius; j <= mid_radius; j++) {
-                int32_t x_index = pad_x(x + i);
-                int32_t y_index = pad_y(y + j);
-                cross_cost += cost_volume[x_index][y_index][d];
+                int32_t x_index = x_remap + i;
+                int32_t y_index = y_remap + j;
+                cross_cost += shared_mem[y_index + x_index * shared_width];
             }
         }
 
