@@ -22,7 +22,7 @@ class KittiStereoDataset(torch.utils.data.Dataset):
         self._full_resolution = full_resolution
         self._downscaled_resolution = downscaled_resolution
 
-        self._resize_to_full_resolution = T.Resize(size=self._full_resolution)
+        self._pad_to_full_resolution = T.Pad(padding=[19, 5, 19, 4], fill=0)
         self._resize_to_downscaled_resolution = T.Resize(size=self._downscaled_resolution)
 
         self._load_stereo_images(data_path, date, drives)
@@ -37,9 +37,9 @@ class KittiStereoDataset(torch.utils.data.Dataset):
         left_image = torchvision.io.read_image(self._left_images[index])
         right_image = torchvision.io.read_image(self._right_images[index])
 
-        left_full_resolution = self._resize_to_full_resolution(left_image)
-        left_downscaled = self._resize_to_downscaled_resolution(right_image)
-        right_full_resolution = self._resize_to_full_resolution(right_image)
+        left_full_resolution = self._pad_to_full_resolution(left_image) / 255.0
+        left_downscaled = self._resize_to_downscaled_resolution(left_image) / 255.0
+        right_full_resolution = self._pad_to_full_resolution(right_image) / 255.0
 
         return left_full_resolution, left_downscaled, right_full_resolution
 
