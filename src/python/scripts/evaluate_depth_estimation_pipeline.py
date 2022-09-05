@@ -1,6 +1,6 @@
 from pipeline.camera import KittiSingleViewCamera
 from pipeline.depth_estimation_pipeline import DepthEstimationPipeline
-from pipeline.depth_estimation_pipeline_metrics import D1Metric
+from pipeline.depth_estimation_pipeline_metrics import D1Metric, ThresholdMetric
 from pipeline.depth_estimation_pipeline_runner import extract_config_from_camera, \
     run_depth_estimation_pipeline_evaluation
 
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     metrics = run_depth_estimation_pipeline_evaluation(
         camera=camera,
         pipeline=depth_pipeline,
-        metrics=[D1Metric()],
+        metrics=[D1Metric(), ThresholdMetric(1.0), ThresholdMetric(2.0), ThresholdMetric(3.0)],
         reduction="mean",
         verbose=True
     )

@@ -25,3 +25,20 @@ class D1Metric(DepthEstimationPipelineMetric):
 
     def name(self) -> str:
         return "D1"
+
+
+class ThresholdMetric(DepthEstimationPipelineMetric):
+
+    def __init__(self, threshold: float):
+        super(ThresholdMetric, self).__init__()
+        self._threshold = threshold
+
+    def process(self, disparity_estimate: torch.Tensor, disparity_gt: torch.Tensor, mask: torch.Tensor) -> float:
+        disparity_estimate = disparity_estimate[mask]
+        disparity_gt = disparity_gt[mask]
+        E = torch.abs(disparity_estimate - disparity_gt)
+        err_mask = E > self._threshold
+        return torch.mean(err_mask.float())
+
+    def name(self) -> str:
+        return f"Threshold_{int(self._threshold)}"
