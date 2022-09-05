@@ -48,3 +48,12 @@ def run_depth_estimation_pipeline(camera: Camera,
             parallel_thread_pool(
                 delayed(DepthEstimationPipelineHook.invoke_in_context)(hook, pipeline_context) for hook in hooks
             )
+
+
+def run_depth_estimation_pipeline_evaluation(camera: Camera,
+                                             pipeline: DepthEstimationPipeline):
+    validate_pipeline_config_wrt_camera(pipeline.get_configuration(), camera)
+
+    for frame_index, (left_view, right_view, gt_disparity) in enumerate(camera.stream_image_pairs_with_gt_disparity()):
+        disparity_map, (left_view, right_view) = pipeline.process(left_view, right_view)
+        print(gt_disparity.shape)

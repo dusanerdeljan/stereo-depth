@@ -25,3 +25,7 @@ class Camera(ABC):
     @abstractmethod
     def stream_image_pairs(self) -> Iterator[Tuple[torch.Tensor, Optional[torch.Tensor]]]:
         pass
+
+    @abstractmethod
+    def stream_image_pairs_with_gt_disparity(self) -> Iterator[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
+        pass

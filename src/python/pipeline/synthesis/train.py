@@ -24,7 +24,7 @@ def train_deep3d_on_kitti_dataset(resume: bool = False) -> None:
     train_dataset = KittiStereoDataset(
         data_path="../../data/train",
         date="2011_09_26",
-        drives=["0011", "0019", "0022", "0052", "0059", "0084", "0091", "0093", "0095", "0096"],
+        drives=["0011", "0022", "0052", "0059", "0091", "0093", "0095", "0096"],
         full_resolution=full_resolution,
         downscaled_resolution=downscaled_resolution
     )

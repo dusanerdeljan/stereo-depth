@@ -19,7 +19,7 @@ def evaluate_deep3d_on_kitti_dataset() -> None:
     eval_dataset = KittiStereoDataset(
         data_path=python_project_relative_path("data/train"),
         date="2011_09_26",
-        drives=["0019", "0022", "0084", "0096"],
+        drives=["0019", "0084"],
         full_resolution=full_resolution,
         downscaled_resolution=downscaled_resolution
     )
