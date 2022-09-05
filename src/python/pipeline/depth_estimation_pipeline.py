@@ -38,7 +38,7 @@ class DepthEstimationPipelineContext:
 
 
 class DepthEstimationPipeline:
-    
+
     def __init__(self, config: DepthEstimationPipelineConfig = DepthEstimationPipelineConfig()):
         self._config = config
         self._right_view_synthesis = RightViewSynthesis()
@@ -68,7 +68,7 @@ class DepthEstimationPipeline:
                 height=self._config.image_shape[0],
                 width=self._config.image_shape[1],
                 min_disparity=self._config.min_disparity,
-                max_disparity=self._config.max_disparity
+                max_disparity=self._config.max_disparity,
             )
             stereo_matching = CudaStereoMatchingBackend(configuration=config)
             return stereo_matching

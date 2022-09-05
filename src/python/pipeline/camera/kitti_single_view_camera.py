@@ -7,7 +7,7 @@ import torchvision.transforms as T
 
 from helpers.imageio_helpers import read_kitti_drive_stereo_pairs
 from helpers.paths import python_project_relative_path
-from helpers.velodyne_points_helpers import generate_depth_map
+from helpers.velodyne_points_helpers import generate_depth_map, get_focal_length_baseline
 from pipeline.camera.camera import Camera
 
 
@@ -20,20 +20,20 @@ class KittiSingleViewCamera(Camera):
         self._right_images.sort()
         self._return_right_view = return_right_view
         self._only_one = only_one
-        self._pil_to_tensor = T.PILToTensor()
-        self._resize = T.Resize(size=self.get_image_shape())
+        self._pad = T.Pad(padding=[19, 5, 19, 4], fill=0)
+        self._focal_length, self._baseline = get_focal_length_baseline(self._calib_dir)
 
     def focal_length(self) -> float:
-        return 721.0
+        return self._focal_length
 
     def baseline(self) -> float:
-        return 0.54
+        return self._baseline
 
     def get_image_shape(self) -> Tuple[int, int]:
         return 384, 1280
 
     def get_disparity_boundaries(self) -> Tuple[int, int]:
-        return 1, 64
+        return 0, 64
 
     def stream_image_pairs(self) -> Iterator[Tuple[torch.Tensor, Optional[torch.Tensor]]]:
         for (left_image, right_image) in zip(self._left_images, self._right_images):
@@ -52,16 +52,18 @@ class KittiSingleViewCamera(Camera):
                 break
 
     def _load_view(self, path: str) -> torch.Tensor:
-        return self._resize(torchvision.io.read_image(path))
+        return self._pad(torchvision.io.read_image(path))
 
     def _load_velodyne_gt_disparity_map(self, left_image_path: str) -> torch.Tensor:
         velodyne_depth = torch.from_numpy(generate_depth_map(
             calib_dir=self._calib_dir,
-            velo_filename=KittiSingleViewCamera._left_image_path_to_velodyne_path(left_image_path)
+            velo_file_name=KittiSingleViewCamera._left_image_path_to_velodyne_path(left_image_path),
+            im_shape=(375, 1242),
+            vel_depth=True
         ))
         velodyne_disparity = self._depth_to_disparity(velodyne_depth)
-        velodyne_disparity[velodyne_disparity == torch.inf] = 0
-        return self._resize(velodyne_disparity.unsqueeze(0)).squeeze(0)
+        velodyne_disparity[torch.isinf(velodyne_disparity)] = 0
+        return self._pad(velodyne_disparity)
 
     def _depth_to_disparity(self, depth: torch.Tensor) -> torch.Tensor:
         return self.baseline() * self.focal_length() / depth
