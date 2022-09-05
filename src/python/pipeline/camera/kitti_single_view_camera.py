@@ -45,7 +45,7 @@ class KittiSingleViewCamera(Camera):
     def stream_image_pairs_with_gt_disparity(self) -> Iterator[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
         for (left_image, right_image) in zip(self._left_images, self._right_images):
             left_view = self._load_view(left_image)
-            right_view = self._load_view(right_image)
+            right_view = self._load_view(right_image) if self._return_right_view else None
             velodyne_disparity = self._load_velodyne_gt_disparity_map(left_image)
             yield left_view, right_view, velodyne_disparity
             if self._only_one:

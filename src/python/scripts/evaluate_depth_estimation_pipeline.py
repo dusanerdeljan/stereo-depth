@@ -14,6 +14,8 @@ if __name__ == "__main__":
     metrics = run_depth_estimation_pipeline_evaluation(
         camera=camera,
         pipeline=depth_pipeline,
-        metrics=[D1Metric()]
+        metrics=[D1Metric()],
+        reduction="mean",
+        verbose=True
     )
     print(metrics)

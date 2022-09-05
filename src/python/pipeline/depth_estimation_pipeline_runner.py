@@ -1,6 +1,5 @@
 from typing import Iterable, Literal, Dict, List
 
-import torch
 from joblib import Parallel, delayed, cpu_count
 
 from pipeline import DepthEstimationPipeline, DepthEstimationPipelineConfig
@@ -28,7 +27,7 @@ def validate_pipeline_config_wrt_camera(config: DepthEstimationPipelineConfig, c
 
 def reduce_metrics(metrics_results: Dict[str, List[float]], reduction: Literal["mean", "sum"]) -> Dict[str, float]:
     _reduction_ops = {
-        "mean": lambda x: sum(x) / (0.1 + len(x)),
+        "mean": lambda x: sum(x) / len(x),
         "sum": sum
     }
     return {
