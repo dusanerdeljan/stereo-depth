@@ -60,6 +60,7 @@ class KittiSingleViewCamera(Camera):
             velo_filename=KittiSingleViewCamera._left_image_path_to_velodyne_path(left_image_path)
         ))
         velodyne_disparity = self._depth_to_disparity(velodyne_depth)
+        velodyne_disparity[velodyne_disparity == torch.inf] = 0
         return self._resize(velodyne_disparity.unsqueeze(0)).squeeze(0)
 
     def _depth_to_disparity(self, depth: torch.Tensor) -> torch.Tensor:

@@ -18,6 +18,7 @@ class DepthEstimationPipelineConfig:
     max_disparity: int = 64
     invalid_disparity: float = -1.0
     stereo_matching_backend: Literal["msnet2d", "msnet3d", "gwcnet", "cuda"] = "cuda"
+    log_perf_time: bool = False
 
     def update(self, **kwargs: Any) -> DepthEstimationPipelineConfig:
         for (key, value) in kwargs.items():
@@ -46,10 +47,10 @@ class DepthEstimationPipeline:
 
     def process(self, left_image: torch.Tensor, right_image: Optional[torch.Tensor] = None) -> torch.Tensor:
         left_image = left_image.cuda()
-        with cuda_perf_clock("Right view generation"):
+        with cuda_perf_clock("Right view generation", self._config.log_perf_time):
             if right_image is None:
                 right_image = self._right_view_synthesis.process(left_image)
-        with cuda_perf_clock("Stereo matching"):
+        with cuda_perf_clock("Stereo matching", self._config.log_perf_time):
             disparity_map = self._stereo_matching.process(left_image, right_image)
         return disparity_map, (left_image, right_image)
 
