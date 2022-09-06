@@ -73,9 +73,6 @@ class MiddleBuryStereoCamera(Camera):
     def stream_image_pairs(self) -> Iterator[Tuple[torch.Tensor, Optional[torch.Tensor]]]:
         yield self._left_image, self._right_image
 
-    def stream_image_pairs_with_gt_disparity(self) -> Iterator[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
-        yield self._left_image, self._right_image, self._left_image
-
     @staticmethod
     def _load_camera_intrinsics(intrinsics: str) -> np.ndarray:
         return np.array(

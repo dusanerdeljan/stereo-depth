@@ -26,5 +26,5 @@ if __name__ == "__main__":
     data_dir = "../data/middlebury/data"
     with Parallel() as parallel_thread_pool:
         parallel_thread_pool(
-            delayed(process_single_middlebury_frame)(data_dir, frame_dir) for frame_dir in ["chess1"]
+            delayed(process_single_middlebury_frame)(data_dir, frame_dir) for frame_dir in data_dir
         )

@@ -3,7 +3,7 @@ from typing import Iterable, Literal, Dict, List
 from joblib import Parallel, delayed, cpu_count
 
 from pipeline import DepthEstimationPipeline, DepthEstimationPipelineConfig
-from pipeline.camera.camera import Camera
+from pipeline.camera.camera import Camera, EvaluationCamera
 from pipeline.depth_estimation_pipeline import DepthEstimationPipelineContext
 from pipeline.depth_estimation_pipeline_hooks import DepthEstimationPipelineHook
 from pipeline.depth_estimation_pipeline_metrics import DepthEstimationPipelineMetric
@@ -61,7 +61,7 @@ def run_depth_estimation_pipeline(camera: Camera,
             )
 
 
-def run_depth_estimation_pipeline_evaluation(camera: Camera,
+def run_depth_estimation_pipeline_evaluation(camera: EvaluationCamera,
                                              pipeline: DepthEstimationPipeline,
                                              metrics: Iterable[DepthEstimationPipelineMetric] = None,
                                              reduction: Literal["mean", "sum"] = "mean",

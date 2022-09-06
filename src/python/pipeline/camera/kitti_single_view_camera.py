@@ -8,10 +8,10 @@ import torchvision.transforms as T
 from helpers.imageio_helpers import read_kitti_drive_stereo_pairs
 from helpers.paths import python_project_relative_path
 from helpers.velodyne_points_helpers import generate_depth_map, get_focal_length_baseline
-from pipeline.camera.camera import Camera
+from pipeline.camera.camera import EvaluationCamera
 
 
-class KittiSingleViewCamera(Camera):
+class KittiSingleViewCamera(EvaluationCamera):
 
     def __init__(self, drive_dir: str, return_right_view: bool = False, only_one: bool = False):
         self._calib_dir = os.path.dirname(python_project_relative_path(drive_dir))
