@@ -9,7 +9,7 @@ from pipeline.synthesis.kitti_dataset import KittiStereoDataset
 from pipeline.synthesis.trainer import TrainerConfig, Trainer
 
 
-def train_deep3d_on_kitti_dataset(resume: bool = False) -> None:
+def train_right_view_synthesis_model(resume: bool = False) -> None:
     device = torch.device("cuda")
     model = Deep3D(device=device)
     if resume:
@@ -22,7 +22,7 @@ def train_deep3d_on_kitti_dataset(resume: bool = False) -> None:
     downscale_factor = 4
     downscaled_resolution = (full_resolution[0] // downscale_factor, full_resolution[1] // downscale_factor)
     train_dataset = KittiStereoDataset(
-        data_path="../../data/train",
+        data_path="../data/train",
         date="2011_09_26",
         drives=["0011", "0022", "0052", "0059", "0091", "0093", "0095", "0096"],
         full_resolution=full_resolution,
@@ -30,6 +30,7 @@ def train_deep3d_on_kitti_dataset(resume: bool = False) -> None:
     )
 
     trainer_config = TrainerConfig(
+        n_epochs=130,
         batch_size=2,
         save_path=DEEP3D_MODEL_WEIGHTS_PATH
     )
@@ -44,4 +45,4 @@ def train_deep3d_on_kitti_dataset(resume: bool = False) -> None:
 
 if __name__ == "__main__":
     torch.cuda.empty_cache()
-    train_deep3d_on_kitti_dataset(resume=True)
+    train_right_view_synthesis_model(resume=True)
