@@ -56,7 +56,7 @@ def evaluate_depth_estimation_pipeline(
     for (drive, use_rvs, depth_backend) in args_iterator:
         metric = evaluate_depth_estimation_pipeline_single_parameters(
             drive_dir=drive,
-            use_right_view_synthesis=use_right_view_synthesis_values,
+            use_right_view_synthesis=use_rvs,
             depth_estimation_backend=depth_backend
         )
         json_metrics.append(dict(
