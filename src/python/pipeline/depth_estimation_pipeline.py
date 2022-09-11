@@ -29,6 +29,13 @@ class DepthEstimationPipelineConfig:
 
 
 @dataclass
+class DepthEstimationResult:
+    left_image: torch.Tensor
+    right_image: torch.Tensor
+    disparity_map: torch.Tensor
+
+
+@dataclass
 class DepthEstimationPipelineContext:
     disparity_map: torch.Tensor
     left_image: torch.Tensor
@@ -45,14 +52,18 @@ class DepthEstimationPipeline:
         self._stereo_matching = self._get_stereo_matching()
         print(f"Using '{self._config.stereo_matching_backend}' as stereo matching backend.")
 
-    def process(self, left_image: torch.Tensor, right_image: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def process(self, left_image: torch.Tensor, right_image: Optional[torch.Tensor] = None) -> DepthEstimationResult:
         left_image = left_image.cuda()
         with cuda_perf_clock("Right view generation", self._config.log_perf_time):
             if right_image is None:
                 right_image = self._right_view_synthesis.process(left_image)
         with cuda_perf_clock("Stereo matching", self._config.log_perf_time):
             disparity_map = self._stereo_matching.process(left_image, right_image)
-        return disparity_map, (left_image, right_image)
+        return DepthEstimationResult(
+            disparity_map=disparity_map,
+            left_image=left_image,
+            right_image=right_image
+        )
 
     def get_configuration(self) -> DepthEstimationPipelineConfig:
         return self._config

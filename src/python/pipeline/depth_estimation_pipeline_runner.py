@@ -46,12 +46,12 @@ def run_depth_estimation_pipeline(camera: Camera,
     n_parallel_jobs = min(len(hooks), cpu_count() - 1, 1)
     with Parallel(n_jobs=n_parallel_jobs) as parallel_thread_pool:
         for frame_index, (left_view, right_view) in enumerate(camera.stream_image_pairs()):
-            disparity_map, (left_image, right_image) = pipeline.process(left_view, right_view)
+            pipeline_result = pipeline.process(left_view, right_view)
 
             pipeline_context = DepthEstimationPipelineContext(
-                disparity_map=disparity_map,
-                left_image=left_image,
-                right_image=right_image,
+                disparity_map=pipeline_result.disparity_map,
+                left_image=pipeline_result.left_image,
+                right_image=pipeline_result.right_image,
                 config=pipeline.get_configuration(),
                 frame_index=frame_index
             )
@@ -76,11 +76,11 @@ def run_depth_estimation_pipeline_evaluation(camera: EvaluationCamera,
 
     for frame_index, (left_view, right_view, gt_disparity) in enumerate(camera.stream_image_pairs_with_gt_disparity()):
         gt_disparity = gt_disparity.cuda()
-        disparity_map, _ = pipeline.process(left_view, right_view)
+        pipeline_result = pipeline.process(left_view, right_view)
         gt_mask = (gt_disparity <= max_disp) & (gt_disparity > 0)
 
         for metric in metrics:
-            metric_loss = metric.process(disparity_map, gt_disparity, gt_mask)
+            metric_loss = metric.process(pipeline_result.disparity_map, gt_disparity, gt_mask)
             metrics_results[metric.name()].append(metric_loss)
 
         if verbose:
