@@ -41,10 +41,13 @@ def run_depth_estimation_pipeline(camera: Camera,
     if hooks is None:
         hooks = []
 
-    validate_pipeline_config_wrt_camera(pipeline.get_configuration(), camera)
+    pipeline_config = pipeline.get_configuration()
+    validate_pipeline_config_wrt_camera(pipeline_config, camera)
 
     n_parallel_jobs = min(len(hooks), cpu_count() - 1, 1)
     with Parallel(n_jobs=n_parallel_jobs) as parallel_thread_pool:
+        parallel_thread_pool(delayed(hook.on_pipeline_start)() for hook in hooks)
+
         for frame_index, (left_view, right_view) in enumerate(camera.stream_image_pairs()):
             pipeline_result = pipeline.process(left_view, right_view)
 
@@ -52,13 +55,15 @@ def run_depth_estimation_pipeline(camera: Camera,
                 disparity_map=pipeline_result.disparity_map,
                 left_image=pipeline_result.left_image,
                 right_image=pipeline_result.right_image,
-                config=pipeline.get_configuration(),
+                config=pipeline_config,
                 frame_index=frame_index
             )
 
             parallel_thread_pool(
                 delayed(DepthEstimationPipelineHook.invoke_in_context)(hook, pipeline_context) for hook in hooks
             )
+
+        parallel_thread_pool(delayed(hook.on_pipeline_end)() for hook in hooks)
 
 
 def run_depth_estimation_pipeline_evaluation(camera: EvaluationCamera,

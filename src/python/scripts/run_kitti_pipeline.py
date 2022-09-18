@@ -1,7 +1,7 @@
-from helpers.paths import python_project_relative_path
+from helpers.paths import python_project_relative_path, timestamp_folder_name
 from pipeline.camera import KittiSingleViewCamera
 from pipeline.depth_estimation_pipeline import DepthEstimationPipeline
-from pipeline.depth_estimation_pipeline_hooks import ContextFrameSaver
+from pipeline.depth_estimation_pipeline_hooks import ContextFrameSaver, ContextVideoSaver
 from pipeline.depth_estimation_pipeline_runner import run_depth_estimation_pipeline, extract_config_from_camera
 
 if __name__ == "__main__":
@@ -14,5 +14,11 @@ if __name__ == "__main__":
     run_depth_estimation_pipeline(
         camera=camera,
         pipeline=depth_pipeline,
-        hooks=[ContextFrameSaver(save_dir=python_project_relative_path("data/temp"))]
+        hooks=[
+            ContextFrameSaver(save_dir=python_project_relative_path("data/temp")),
+            ContextVideoSaver(
+                save_path=python_project_relative_path(f"data/temp/videos/{timestamp_folder_name()}.mp4"),
+                fps=30
+            )
+        ]
     )

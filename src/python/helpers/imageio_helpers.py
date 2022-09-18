@@ -15,13 +15,17 @@ def ensure_chw(image: torch.Tensor) -> torch.Tensor:
     return torch.tile(image.unsqueeze(0), (3, 1, 1))
 
 
+def prepare_image_grid(images: Union[torch.Tensor, List[torch.Tensor]]) -> List[torch.Tensor]:
+    if not isinstance(images, list):
+        images = [images]
+    return [ensure_chw(normalize_image(image)).cpu() for image in images]
+
+
 def save_image_grid(images: Union[torch.Tensor, List[torch.Tensor]],
                     file_path: str,
                     padding: int = 10,
                     pad_value: int = 255) -> None:
-    if not isinstance(images, list):
-        images = [images]
-    images = [ensure_chw(normalize_image(image)).cpu() for image in images]
+    images = prepare_image_grid(images)
     torchvision.utils.save_image(images, file_path, padding=padding, pad_value=pad_value)
 
 
