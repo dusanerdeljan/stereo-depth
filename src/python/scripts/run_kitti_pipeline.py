@@ -27,7 +27,7 @@ def run_single_stereo_backend(stereo_backend: Literal["cuda", "gwcnet", "msnet3d
         camera=camera,
         pipeline=depth_pipeline,
         hooks=[
-            # ContextFrameSaver(save_dir=python_project_relative_path("data/temp")),
+            ContextFrameSaver(save_dir=python_project_relative_path("data/temp")),
             ContextVideoSaver(
                 save_path=python_project_relative_path(f"data/temp/videos/{video_name}"),
                 fps=_backends_to_fps[stereo_backend]
