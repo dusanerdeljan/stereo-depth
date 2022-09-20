@@ -8,10 +8,23 @@ GPU accelerated single view passive stereo depth estimation pipeline.
  * Real-time DNN based right view generation
  * Multiple depth estimation backends
     * Real-time CUDA stereo matching algorithm
-    * Group-wise Correlation Stereo Network (GwC-Net)
+    * Group-wise Correlation Stereo Network (GwcNet)
     * MobileStereoNet (MSNet2D & MSNet3D)
  * REST API for the entire depth estimation pipeline
 
+## Results
+
+### Right View Synthesis + CUDA stereo matching algorithm
+
+https://user-images.githubusercontent.com/27950949/191323250-d241a2f9-9e64-45a9-bbc3-1a12966956f0.mp4
+
+### Right View Synthesis + GwcNet
+
+https://user-images.githubusercontent.com/27950949/191323286-15858ada-66a7-4b01-b4f7-29e5fe3bbb65.mp4
+
+### Right View Synthesis + MobileStereoNet
+
+https://user-images.githubusercontent.com/27950949/191323318-8a51019e-e17e-44b9-b967-a0965560ef27.mp4
 
 ## Main references
  * Right view synthesis
@@ -24,7 +37,7 @@ GPU accelerated single view passive stereo depth estimation pipeline.
     
    * Chang, Qiong, and Tsutomu Maruyama. "Real-time stereo vision system: a multi-block matching on GPU." IEEE Access 6 (2018): 42030-42046.
    
- * GwC-Net
+ * GwcNet
     
    * Guo, Xiaoyang, et al. "Group-wise correlation stereo network." Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. 2019.
     
