@@ -12,16 +12,16 @@ GPU accelerated single view passive stereo depth estimation pipeline. Architectu
     * MobileStereoNet (MSNet2D & MSNet3D)
  * REST API for the entire depth estimation pipeline
  
-## Right View Synthesis module
+### Right View Synthesis module
 Architecture and the data flow of the Right view syntehsis module is presented on the image bellow.
 
 ![RVS](https://user-images.githubusercontent.com/27950949/192248798-18ce0efc-4ca2-4167-af82-e3bd93bfc026.png)
 
-## Depth Estimation module
+### Depth Estimation module
 
 There are multiple depth estimation backends implemented - CUDA stereo matching algorithm, GwcNet and MobileStereoNet. Backend can be configured when creating an instance of `DepthEstimationPipeline` class.
 
-### CUDA stereo matching algorithm
+#### CUDA stereo matching algorithm
 
 The algorithm consists of 9 steps, each of which can we efficiently implemented for execution on GPUs:
   1. Input images are converted to grayscale
@@ -34,13 +34,13 @@ The algorithm consists of 9 steps, each of which can we efficiently implemented 
   8. Vertical disparity fill using bilateral estimation
   9. Horizontal disparity fill using bilateral estimation
 
-### GwcNet
+#### GwcNet
 
 Architecture of the GwcNet model is presented at the image bellow.
 
 ![GwcNet Architecture](https://user-images.githubusercontent.com/27950949/192286311-1acbb893-3aad-4952-af77-aaa94f2435d2.png)
 
-### MobileStereoNet
+#### MobileStereoNet
 
 The architecture of the MobileStereoNet model is very similar to the GwcNet model. Main differences inclue using depth-wise separable convolutions instead of regular 3D convolutions, as well as using different method for constructing the combined cost volume from the feature maps of left and right input images (presented at the image bellow).
 
